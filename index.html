@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蒙特卡洛千次模拟 | 极值边界与动态区间诊断</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #0f172a; --bg-panel: #1e293b;
+            --text-main: #f8fafc; --text-muted: #94a3b8;
+            --border-color: #334155;
+            
+            --color-analysis: #c4b5fd; /* 紫：分析区间颜色 */
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        body { background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 1800px; display: grid; grid-template-columns: 320px 1fr; gap: 24px; flex: 1; }
+
+        /* 侧边栏 */
+        .sidebar { background-color: var(--bg-panel); border-radius: 12px; padding: 24px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 20px; }
+        h2 { margin: 0 0 10px 0; font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        
+        /* 双模式切换开关 */
+        .mode-switch { display: flex; background: #0f172a; border-radius: 8px; padding: 4px; border: 1px solid var(--border-color); margin-bottom: 5px; }
+        .mode-option { flex: 1; text-align: center; padding: 10px 0; font-size: 0.85rem; cursor: pointer; border-radius: 6px; color: var(--text-muted); transition: all 0.2s; }
+        .mode-option:hover { color: #fff; }
+        .mode-option.active { background: var(--bg-panel); color: #fff; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .control-header { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); }
+        .val-display { font-weight: bold; font-family: monospace; color: #fff; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+
+        .btn-run {
+            background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; padding: 14px; border-radius: 8px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-top: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-run:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4); }
+        .btn-run:active { transform: translateY(0); }
+
+        .btn-link {
+            background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
+            padding: 12px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer;
+            transition: all 0.2s; text-align: center; text-decoration: none; display: block;
+        }
+        .btn-link:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.05); }
+
+        .insight-box { background: rgba(255, 255, 255, 0.05); border-left: 4px solid; padding: 16px; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; transition: border-color 0.3s;}
+        
+        .hint-box { font-size: 0.8rem; color: #3b82f6; background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2); margin-top: 10px; line-height: 1.5; }
+
+        /* 主视窗 */
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+        .stat-card {
+            background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; 
+            position: relative; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--card-color); }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .stat-card.active { border-color: var(--card-color); box-shadow: 0 0 15px rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); }
+
+        .stat-title { font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 10px; display: flex; justify-content: space-between;}
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.75rem; color: var(--text-muted); }
+        .stat-val { font-weight: bold; font-family: monospace; font-size: 0.85rem; color: #fff; }
+        .stat-val.danger { color: #f43f5e; }
+        
+        /* 动态详情面板 */
+        .detail-panel {
+            display: none; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 16px; animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .detail-header { font-size: 1rem; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .detail-box { background: var(--bg-panel); padding: 12px 16px; border-radius: 8px; border-left: 3px solid; }
+        .detail-box-title { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;}
+        .detail-box-val { font-size: 1.2rem; font-weight: bold; font-family: monospace; margin-bottom: 4px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .detail-box-prob { font-size: 0.8rem; font-weight: 600; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color);}
+
+        /* 高级分析区间层 */
+        .analysis-panel { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--color-analysis); border-radius: 8px; padding: 12px; margin-top: 10px;}
+        .analysis-header { font-size: 0.9rem; font-weight: bold; color: var(--color-analysis); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .analysis-content { display: flex; justify-content: space-between; gap: 16px;}
+        .analysis-box { background: var(--bg-panel); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); flex: 1; text-align: center;}
+        .analysis-box-title { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;}
+        .analysis-box-val { font-size: 1rem; font-weight: bold; font-family: monospace; color: #fff;}
+
+        /* 双图表布局 */
+        .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-wrapper, .dist-chart { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; height: 520px; width: 100%; position: relative; }
+        @media (max-width: 1200px) { .charts-row { grid-template-columns: 1fr; gap: 16px; } .chart-wrapper, .dist-chart { height: 450px; } }
+
+        /* 底部版权信息 */
+        .footer-info { width: 100%; max-width: 1800px; text-align: center; padding: 24px 0 10px 0; margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--border-color); letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <aside class="sidebar">
+        <h2>🎲 蒙特卡洛参数引擎</h2>
+        
+        <div class="mode-switch">
+            <div class="mode-option active" onclick="switchMode('sim')">🚀 理论模拟模式</div>
+            <div class="mode-option" onclick="switchMode('trade')">💼 真实交易模式</div>
+        </div>
+
+        <div class="control-group">
+            <div class="control-header"><span>真实胜率 (Win Rate)</span><span class="val-display" id="valW">45%</span></div>
+            <input type="range" id="sliderW" min="20" max="75" step="1" value="45">
+        </div>
+        <div class="control-group">
+            <div class="control-header"><span>盈亏比 (Reward/Risk)</span><span class="val-display" id="valRR">2.0</span></div>
+            <input type="range" id="sliderRR" min="0.5" max="8.0" step="0.1" value="2.0">
+        </div>
+        <div class="control-group">
+            <div class="control-header"><span>单次模拟交易笔数</span><span class="val-display" id="valN">100</span></div>
+            <input type="range" id="sliderN" min="50" max="500" step="10" value="100">
+        </div>
+        <div class="control-group" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px;">
+            <div class="control-header"><span style="color: #3b82f6;">🌍 平行宇宙数量</span><span class="val-display" id="valRuns">1000</span></div>
+            <input type="range" id="sliderRuns" min="10" max="2000" step="10" value="1000">
+        </div>
+
+        <button class="btn-run" onclick="runMonteCarlo()">⚡ 执行重新洗牌</button>
+        <a href="https://zxchart.github.io/position-calculator/" target="_blank" class="btn-link">🧮 仓位计算器</a>
+        
+        <div class="hint-box">
+            💡 <b>进阶交互：</b><br>
+            • <b>单击图表曲线</b>：可隔离追踪任意单次模拟的宇宙轨迹。<br>
+            • <b>双击图表区域</b>：可在“自适应严丝合缝”与“留白展示”两种 Y 轴缩放模式间无缝切换。
+        </div>
+        
+        <div class="insight-box" id="dynamicInsight" style="margin-top: 10px;"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-header"><span id="detailIcon">📊</span> <span id="detailTitle">策略区间分布分析</span></div>
+            <div class="detail-grid">
+                <div class="detail-box" style="border-color: #f43f5e;">
+                    <div class="detail-box-title">📉 谷底深渊 (绝对最低点)</div>
+                    <div class="detail-box-val" id="dtMinVal" title="">$0</div>
+                    <div class="detail-box-prob">落入此附近概率: <span id="dtMinProb">-</span></div>
+                </div>
+                <div class="detail-box" style="border-color: #3b82f6;">
+                    <div class="detail-box-title">🎯 普通人宿命 (中位数)</div>
+                    <div class="detail-box-val" id="dtMedVal" title="">$0</div>
+                    <div class="detail-box-prob">落入此附近概率: <span id="dtMedProb">-</span></div>
+                </div>
+                <div class="detail-box" style="border-color: #10b981;">
+                    <div class="detail-box-title">🚀 幸存者巅峰 (绝对最高点)</div>
+                    <div class="detail-box-val" id="dtMaxVal" title="">$0</div>
+                    <div class="detail-box-prob">落入此附近概率: <span id="dtMaxProb">-</span></div>
+                </div>
+            </div>
+            
+            <div class="analysis-panel" id="customAnalysis" style="display: none;">
+                <div class="analysis-header"><span>🟣 自定义概率分析</span><span>(您已框选如下价格区间)</span></div>
+                <div class="analysis-content">
+                    <div class="analysis-box">
+                        <div class="analysis-box-title">区间最高价</div>
+                        <div class="analysis-box-val" id="dtMaxBoundVal">-</div>
+                    </div>
+                    <div class="analysis-box">
+                        <div class="analysis-box-title">区间最低价</div>
+                        <div class="analysis-box-val" id="dtMinBoundVal">-</div>
+                    </div>
+                    <div class="analysis-box" style="border-color: var(--color-analysis);">
+                        <div class="analysis-box-title">落入此区间概率</div>
+                        <div class="analysis-box-val" id="dtRangeProb" style="color: var(--color-analysis); font-size: 1.2rem;">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-wrapper"><div id="mcChart" style="width: 100%; height: 100%;"></div></div>
+            <div class="dist-chart"><div id="distChart" style="width: 100%; height: 100%;"></div></div>
+        </div>
+    </main>
+</div>
+
+<div class="footer-info">
+    制作者：B站/公众号 知行图表交易
+</div>
+
+<script>
+    const chart = echarts.init(document.getElementById('mcChart'));
+    const distChart = echarts.init(document.getElementById('distChart'));
+    
+    let globalAggregates = {};
+    let currentActiveCard = null;
+    let xAxisData = [];
+    
+    // Y轴动态范围控制状态
+    let globalStrictMin = 0.01;
+    let globalStrictMax = 1e5;
+    let yAxisScaleMode = 'padded'; // 'padded' = 留白默认模式, 'full' = 满屏波动模式
+    let isolatedSeriesId = null;   // 选中高亮单根线条状态
+
+    let currentMode = 'sim';
+
+    const simMeta = {
+        c1: { name: '稳健 (1/4)', title: '稳健策略', color: '#10b981', icon: '🛡️', mult: 0.25 },
+        c2: { name: '标准 (1/2)', title: '标准策略', color: '#0ea5e9', icon: '⚖️', mult: 0.5 },
+        c3: { name: '巅峰 (满)', title: '满凯利策略', color: '#3b82f6', icon: '👑', mult: 1.0 },
+        c4: { name: '贪婪 (1.5x)', title: '贪婪策略', color: '#f59e0b', icon: '⚠️', mult: 1.5 },
+        c5: { name: '赌徒 (2.1x)', title: '赌徒策略', color: '#f43f5e', icon: '💀', mult: 2.1 }
+    };
+
+    const tradeMeta = {
+        c1: { name: '极稳 (1/12)', title: '微仓极稳策略', color: '#8b5cf6', icon: '🪶', mult: 1/12 },
+        c2: { name: '保守 (1/8)', title: '保守防守策略', color: '#d946ef', icon: '🐢', mult: 1/8 },
+        c3: { name: '进阶 (1/6)', title: '进阶均衡策略', color: '#06b6d4', icon: '🏹', mult: 1/6 },
+        c4: { name: '稳健 (1/4)', title: '稳健增长策略', color: '#10b981', icon: '🛡️', mult: 0.25 },
+        c5: { name: '极限 (1/2)', title: '真实极限策略', color: '#0ea5e9', icon: '⚠️', mult: 0.5 }
+    };
+
+    let currentMeta = simMeta;
+
+    // ---------- ECharts ZRender 底层强力点击隔离与双击自适应 ----------
+    chart.getZr().on('click', function (e) {
+        const pointInPixel = [e.offsetX, e.offsetY];
+        if (!chart.containPixel('grid', pointInPixel)) {
+            if (isolatedSeriesId !== null) {
+                isolatedSeriesId = null;
+                renderChartSeries();
+            }
+            return;
+        }
+
+        const pointInData = chart.convertFromPixel('grid', pointInPixel);
+        const xIndex = Math.round(pointInData[0]); 
+        const yValueLog = pointInData[1]; 
+
+        let minDiff = Infinity;
+        let closestSeriesId = null;
+
+        const currentOption = chart.getOption();
+        if(!currentOption || !currentOption.series) return;
+        
+        currentOption.series.forEach(s => {
+            if (s.name === '起始线标记' || !s.data || s.data.length <= xIndex) return;
+            const yVal = s.data[xIndex];
+            if (yVal !== undefined && yVal > 0) {
+                // 在对数空间里寻找视觉上最接近的曲线
+                const diff = Math.abs(Math.log10(yVal) - Math.log10(yValueLog));
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestSeriesId = s.id;
+                }
+            }
+        });
+
+        if (closestSeriesId) {
+            // 设置吸附阈值，点到太远的空白处等于取消隔离
+            if (minDiff > 0.4) {
+                 isolatedSeriesId = null;
+            } else if (isolatedSeriesId === closestSeriesId) {
+                isolatedSeriesId = null; // 再次点击取消高亮
+            } else {
+                isolatedSeriesId = closestSeriesId;
+            }
+            renderChartSeries();
+        }
+    });
+
+    // 双击触发 Y 轴自适应缩放切换
+    chart.getZr().on('dblclick', function(e) {
+        yAxisScaleMode = yAxisScaleMode === 'padded' ? 'full' : 'padded';
+        renderChartSeries();
+        renderDistribution();
+    });
+    distChart.getZr().on('dblclick', function(e) {
+        yAxisScaleMode = yAxisScaleMode === 'padded' ? 'full' : 'padded';
+        renderChartSeries();
+        renderDistribution();
+    });
+
+    // ---------- 卡片渲染与模式切换 ----------
+    function renderStatCards() {
+        const grid = document.getElementById('statsGrid');
+        grid.innerHTML = '';
+        for (const key in currentMeta) {
+            const meta = currentMeta[key];
+            const activeClass = currentActiveCard === key ? ' active' : '';
+            grid.innerHTML += `
+                <div class="stat-card${activeClass}" id="card-${key}" style="--card-color: ${meta.color};" onclick="toggleCard('${key}')">
+                    <div class="stat-title"><span>${meta.icon} ${meta.name}</span><span id="bet${key}" style="color:var(--text-muted); font-size:0.7rem;"></span></div>
+                    <div class="stat-row"><span>中位数余额:</span><span class="stat-val" id="med${key}">$0</span></div>
+                    <div class="stat-row"><span>最大回撤:</span><span class="stat-val" id="dd${key}">0%</span></div>
+                    <div class="stat-row"><span>爆仓率 (&lt;$10):</span><span class="stat-val" id="ruin${key}">0%</span></div>
+                    <div class="stat-row"><span>📉 腰斩率 (&lt;$50):</span><span class="stat-val" id="halve${key}">0%</span></div>
+                </div>
+            `;
+        }
+    }
+
+    function switchMode(mode) {
+        if (currentMode === mode) return;
+        currentMode = mode;
+        document.querySelectorAll('.mode-option').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.mode-option[onclick="switchMode('${mode}')"]`).classList.add('active');
+        
+        currentMeta = mode === 'sim' ? simMeta : tradeMeta;
+        currentActiveCard = null; 
+        isolatedSeriesId = null;
+        document.getElementById('detailPanel').style.display = 'none';
+        clearBrush();
+        
+        renderStatCards(); 
+        runMonteCarlo();   
+    }
+
+    function getSuperscript(val) {
+        const chars = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+        return val.toString().split('').map(c => chars[c] || c).join('');
+    }
+    function toPowerOfTen(value) {
+        if (value <= 0) return '0';
+        const exp = Math.floor(Math.log10(value));
+        const mantissa = value / Math.pow(10, exp);
+        if (Math.abs(mantissa - 1) < 0.05) return `10${getSuperscript(exp)}`;
+        return `${mantissa.toFixed(2)}×10${getSuperscript(exp)}`;
+    }
+    function formatMoneyExt(val) {
+        if (val <= 0.01) return '归零';
+        if (val >= 1e12) { 
+            const exp = Math.floor(Math.log10(val));
+            const base = (val / Math.pow(10, exp)).toFixed(2);
+            return base + ' × 10' + getSuperscript(exp);
+        }
+        if (val >= 1e8) return (val / 1e8).toFixed(2) + '亿';
+        if (val >= 1e4) return (val / 1e4).toFixed(2) + '万';
+        return val.toFixed(1);
+    }
+    function calculateProbability(arr, minBound, maxBound) {
+        let count = 0;
+        for (let i = 0; i < arr.length; i++) if (arr[i] >= minBound && arr[i] <= maxBound) count++;
+        return ((count / arr.length) * 100).toFixed(1) + '%';
+    }
+
+    function clearBrush() {
+        distChart.dispatchAction({ type: 'brush', areas: [] });
+        document.getElementById('customAnalysis').style.display = 'none';
+    }
+    
+    // ---------- Y轴动态范围计算器 ----------
+    function getDynamicYAxisBounds() {
+        let displayMin = globalStrictMin;
+        let displayMax = globalStrictMax;
+        
+        // 当选中某个策略卡片时，锁定 Y 轴极限只包含该策略的最广波动范围
+        if (currentActiveCard !== null && globalAggregates[currentActiveCard]) {
+            displayMin = globalAggregates[currentActiveCard].absMin;
+            displayMax = globalAggregates[currentActiveCard].absMax;
+        }
+
+        // 防止直线导致对数轴崩溃
+        if (displayMin >= displayMax) {
+            displayMin = displayMin * 0.8;
+            displayMax = displayMax * 1.2;
+        }
+
+        if (yAxisScaleMode === 'full') {
+            return { min: displayMin, max: displayMax };
+        } else {
+            // Padded 留白模式下，因是对数轴，放宽至上下 3 倍空间
+            return { 
+                min: Math.max(0.001, displayMin / 3), 
+                max: Math.min(1e80, displayMax * 3) 
+            };
+        }
+    }
+
+    // ---------- 核密度与右侧分布图渲染 ----------
+    function kde(values, numPoints = 180) {
+        if (!values || values.length === 0) return { x: [], y: [] };
+        const n = values.length;
+        const logVals = values.map(v => Math.log10(v));
+        const mean = logVals.reduce((a,b) => a+b,0)/n;
+        const variance = logVals.reduce((sum, x) => sum + (x-mean)**2, 0) / n;
+        
+        let std = Math.sqrt(variance);
+        if (std < 1e-9) std = 1e-9; 
+        
+        const bandwidth = std * Math.pow(n, -1/5); 
+        const minLog = Math.min(...logVals) - bandwidth*2;
+        const maxLog = Math.max(...logVals) + bandwidth*2;
+        const gridLog = [];
+        const step = (maxLog - minLog) / (numPoints - 1);
+        for (let i = 0; i < numPoints; i++) gridLog.push(minLog + i * step);
+        function gaussKernel(u) { return Math.exp(-0.5 * u*u) / Math.sqrt(2*Math.PI); }
+        const density = new Array(numPoints).fill(0);
+        for (let i = 0; i < numPoints; i++) {
+            let sum = 0;
+            for (let j = 0; j < n; j++) {
+                const u = (gridLog[i] - logVals[j]) / bandwidth;
+                sum += gaussKernel(u);
+            }
+            density[i] = sum / (n * bandwidth);
+        }
+        const xVals = gridLog.map(l => Math.pow(10, l));
+        return { x: xVals, y: density };
+    }
+
+    function renderDistribution() {
+        if (Object.keys(globalAggregates).length === 0) return;
+        const strategies = Object.keys(currentMeta);
+        const isHighlight = currentActiveCard !== null;
+        const highlightedStrategies = isHighlight ? [currentActiveCard] : strategies;
+        const series = [];
+        
+        let maxKdeDensity = 0;
+        for (let key of highlightedStrategies) {
+            const agg = globalAggregates[key];
+            if (!agg || !agg.finalValues) continue;
+            const kdeResult = kde(agg.finalValues);
+            if (kdeResult.y.length === 0) continue;
+            const currentMaxKde = Math.max(...kdeResult.y);
+            if(currentMaxKde > maxKdeDensity) maxKdeDensity = currentMaxKde;
+        }
+        if(maxKdeDensity === 0 || isNaN(maxKdeDensity)) maxKdeDensity = 1;
+
+        for (let key of highlightedStrategies) {
+            const agg = globalAggregates[key];
+            if (!agg || !agg.finalValues) continue;
+            const meta = currentMeta[key];
+            const kdeResult = kde(agg.finalValues);
+            if (kdeResult.x.length === 0) continue;
+            const dataPoints = kdeResult.x.map((val, idx) => {
+                const absoluteDensity = kdeResult.y[idx];
+                const relativePercent = ((absoluteDensity / maxKdeDensity) * 100).toFixed(1);
+                return [absoluteDensity, val, relativePercent];
+            });
+            series.push({
+                name: meta.title,
+                type: 'line',
+                data: dataPoints,
+                symbol: 'none',
+                itemStyle: { color: meta.color }, 
+                lineStyle: { color: meta.color, width: isHighlight ? 3 : 2, opacity: isHighlight ? 1 : 0.7 },
+                areaStyle: isHighlight ? { color: meta.color, opacity: 0.15 } : undefined,
+                smooth: true,
+                connectNulls: false,
+                showSymbol: false,
+                tooltip: { formatter: (params) => {
+                    let val = params.value;
+                    return `<span style="color:${meta.color}">● ${params.seriesName}</span><br/>` +
+                           `资金: $${formatMoneyExt(val[1])}<br/>` +
+                           `概率峰值: ${val[2]}%`;
+                }}
+            });
+        }
+        
+        let markLines = [];
+        if (isHighlight) {
+            const key = currentActiveCard;
+            const agg = globalAggregates[key];
+            const meta = currentMeta[key];
+            if (agg && agg.finalValues) {
+                const vals = [...agg.finalValues].sort((a,b)=>a-b);
+                markLines = [
+                    { name: '最低点', value: vals[0], color: '#ff6b6b' },
+                    { name: '后10%分位', value: vals[Math.floor(vals.length * 0.1)], color: '#ffa500' },
+                    { name: '中位数', value: agg.medianPath[agg.medianPath.length - 1], color: meta.color },
+                    { name: '前10%分位', value: vals[Math.floor(vals.length * 0.9)], color: '#4caf50' },
+                    { name: '最高点', value: vals[vals.length-1], color: '#ffffff' }
+                ].map(ann => ({
+                    name: ann.name, yAxis: ann.value,
+                    lineStyle: { color: ann.color, width: 2, type: 'dashed', cap: 'round' },
+                    label: { show: true, formatter: `${ann.name}: $${formatMoneyExt(ann.value)}`, position: 'end', color: ann.color, fontWeight: 'bold', fontSize: 10, offset: [6, 0] }
+                }));
+            }
+        }
+        
+        const yBounds = getDynamicYAxisBounds();
+
+        const option = {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'item', axisPointer: { type: 'shadow' } },
+            grid: { left: '12%', right: '8%', top: '10%', bottom: '8%', containLabel: false },
+            brush: { toolbox: ['clear'], yAxisIndex: 0, brushStyle: { borderWidth: 1, color: 'rgba(196, 181, 253, 0.2)', borderColor: 'rgba(196, 181, 253, 0.8)' } },
+            xAxis: {
+                type: 'value', name: '概率密度 (相对 %)', nameLocation: 'middle', nameGap: 35,
+                max: maxKdeDensity * 1.05, 
+                axisLabel: { color: '#94a3b8', fontSize: 10, formatter: (val) => ((val / maxKdeDensity) * 100).toFixed(0) + '%' },
+                splitLine: { lineStyle: { color: '#334155' } }
+            },
+            yAxis: {
+                type: 'log', logBase: 10, name: '最终资金 ($)', nameLocation: 'middle', nameGap: 45, min: yBounds.min, max: yBounds.max,
+                axisLabel: { 
+                    color: '#94a3b8', fontSize: 11, hideOverlap: false, 
+                    formatter: (value) => {
+                        if (value === 100) return '{start|100 (起)}';
+                        if (value === 10 || value === 1 || value === 0.1 || value === 0.01) return value.toString();
+                        return toPowerOfTen(value);
+                    },
+                    rich: { start: { color: '#fff', fontWeight: 'bold' } }
+                },
+                splitLine: { lineStyle: { color: '#334155', type: 'dashed' }, show: true },
+                minorTick: { show: true, splitNumber: 5 },
+                minorSplitLine: { show: true, lineStyle: { color: '#1e293b', type: 'dashed', width: 1 } },
+                interval: 1
+            },
+            series: series
+        };
+
+        if (isHighlight && markLines.length) {
+            option.series.push({
+                name: '分位标注', type: 'line', data: [],
+                markLine: { silent: false, symbol: 'none', data: markLines, label: { show: true, formatter: (params) => params.name, position: 'end' }, lineStyle: { width: 2, type: 'dashed' } }
+            });
+        }
+        distChart.setOption(option, true);
+        distChart.dispatchAction({ type: 'takeGlobalCursor', key: 'brush', brushOption: { brushType: 'lineY', brushMode: 'single' } });
+    }
+
+    distChart.on('brushEnd', function (params) {
+        if (!params.areas || params.areas.length === 0) {
+            document.getElementById('customAnalysis').style.display = 'none';
+            return; 
+        }
+        let yRange = params.areas[0].coordRange; 
+        let yMinBound = Math.min(yRange[0], yRange[1]);
+        let yMaxBound = Math.max(yRange[0], yRange[1]);
+
+        document.getElementById('customAnalysis').style.display = 'block';
+        document.getElementById('dtMinBoundVal').innerText = '$' + formatMoneyExt(yMinBound);
+        document.getElementById('dtMaxBoundVal').innerText = '$' + formatMoneyExt(yMaxBound);
+
+        let finalsToAnalyze = [];
+        const isHighlight = currentActiveCard !== null;
+        const targetedStrategies = isHighlight ? [currentActiveCard] : Object.keys(currentMeta);
+        for(let key of targetedStrategies) {
+            if(globalAggregates[key] && globalAggregates[key].finalValues) { finalsToAnalyze.push(...globalAggregates[key].finalValues); }
+        }
+        if(finalsToAnalyze.length > 0) { document.getElementById('dtRangeProb').innerText = calculateProbability(finalsToAnalyze, yMinBound, yMaxBound); }
+    });
+
+    // ---------- 左侧资金曲线渲染 ----------
+    function renderChartSeries() {
+        let series = [];
+        const targetedKey = currentActiveCard;
+        const targetedMeta = targetedKey ? currentMeta[targetedKey] : null;
+        
+        // 动态计算样式以实现单线点击隔离效果
+        const getOpacity = (defaultOp, id) => {
+            if (isolatedSeriesId === null) return defaultOp;
+            return isolatedSeriesId === id ? 1 : 0.05; 
+        };
+        const getWidth = (defaultW, id) => {
+            if (isolatedSeriesId === null) return defaultW;
+            return isolatedSeriesId === id ? defaultW + 2 : Math.max(0, defaultW - 1);
+        };
+        
+        for (const key in globalAggregates) {
+            const agg = globalAggregates[key];
+            if (!agg) continue;
+            const meta = currentMeta[key];
+            
+            if (targetedKey === null) {
+                let sId = `med_${key}`;
+                series.push({
+                    id: sId, name: meta.title + ' (中位数)', type: 'line', data: agg.medianPath, symbol: 'none',
+                    itemStyle: { color: meta.color }, 
+                    lineStyle: { color: meta.color, width: getWidth(3, sId), opacity: getOpacity(1, sId) },
+                    z: isolatedSeriesId === sId ? 20 : 5
+                });
+                agg.samples.forEach((samp, idx) => {
+                    let sampId = `sample_${key}_${idx}`;
+                    series.push({
+                        id: sampId, name: 'bg_sample', type: 'line', data: samp, symbol: 'none', itemStyle: { color: meta.color },
+                        lineStyle: { color: meta.color, width: getWidth(1, sampId), opacity: getOpacity(0.1, sampId) },
+                        animation: false, hoverAnimation: false, z: isolatedSeriesId === sampId ? 10 : 1
+                    });
+                });
+            } 
+            else if (targetedKey === key) {
+                let bounds = [
+                    { id: `max_${key}`, name: '极限最高边界', data: agg.maxPath, color: '#ffffff', type: 'dashed', w: 2, op: 0.9, lbl: '极限最高' },
+                    { id: `p90_${key}`, name: '前10%概率上限', data: agg.p90Path, color: meta.color, type: 'dotted', w: 2, op: 0.8, lbl: '前10%' },
+                    { id: `medTarget_${key}`, name: '中位数基准', data: agg.medianPath, color: meta.color, type: 'solid', w: 5, op: 1, lbl: '中位数' },
+                    { id: `p10_${key}`, name: '后10%概率下限', data: agg.p10Path, color: meta.color, type: 'dotted', w: 2, op: 0.8, lbl: '后10%' },
+                    { id: `min_${key}`, name: '极限最低边界', data: agg.minPath, color: '#ff4d4f', type: 'dashed', w: 2, op: 0.9, lbl: '极限最低' }
+                ];
+
+                bounds.forEach(b => {
+                    let s = {
+                        id: b.id, name: b.name, type: 'line', data: b.data, symbol: 'none',
+                        itemStyle: { color: b.color },
+                        lineStyle: { color: b.color, width: getWidth(b.w, b.id), type: b.type, opacity: getOpacity(b.op, b.id) },
+                        endLabel: { show: isolatedSeriesId === null || isolatedSeriesId === b.id, formatter: b.lbl, color: b.color, fontSize: 11 },
+                        z: isolatedSeriesId === b.id ? 20 : 10
+                    };
+                    if(b.name === '中位数基准') { s.lineStyle.shadowColor = meta.color; s.lineStyle.shadowBlur = 10; }
+                    series.push(s);
+                });
+
+                agg.samples.forEach((samp, idx) => {
+                    let sampId = `sampleTarget_${key}_${idx}`;
+                    series.push({
+                        id: sampId, name: 'bg_sample', type: 'line', data: samp, symbol: 'none', itemStyle: { color: meta.color },
+                        lineStyle: { color: meta.color, width: getWidth(1, sampId), opacity: getOpacity(0.15, sampId) },
+                        animation: false, hoverAnimation: false, z: isolatedSeriesId === sampId ? 10 : 1
+                    });
+                });
+            } 
+            else {
+                let sIdDim = `dim_med_${key}`;
+                series.push({
+                    id: sIdDim, name: meta.title + ' (中位数)', type: 'line', data: agg.medianPath, symbol: 'none', itemStyle: { color: meta.color },
+                    lineStyle: { color: meta.color, width: getWidth(2, sIdDim), opacity: getOpacity(0.2, sIdDim) },
+                    z: isolatedSeriesId === sIdDim ? 20 : 2
+                });
+            }
+        }
+        
+        series.push({
+            name: '起始线标记', type: 'line', silent: true, 
+            markLine: {
+                silent: true, symbol: 'none', data: [{ yAxis: 100 }],
+                lineStyle: { color: 'rgba(255, 255, 255, 0.4)', type: 'solid', width: 1 },
+                label: { show: true, position: 'insideStartBottom', formatter: '起始资金 ($100)', color: '#fff', fontSize: 10 }
+            }
+        });
+
+        const yBounds = getDynamicYAxisBounds();
+
+        chart.setOption({
+            backgroundColor: 'transparent', 
+            tooltip: { 
+                trigger: 'axis', 
+                backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#334155', textStyle: { color: '#f8fafc' },
+                formatter: function (params) {
+                    let html = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:6px;">第 ${params[0].axisValue} 次交易</div>`;
+                    
+                    // 情境 A：点选隔离追踪了单根线段
+                    if (isolatedSeriesId !== null) {
+                        let p = params.find(item => item.seriesId === isolatedSeriesId);
+                        if (p) {
+                            let name = p.seriesName === 'bg_sample' ? '🔍 追踪单次模拟轨迹' : p.seriesName;
+                            html += `<div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:4px; font-size: 0.95rem;">
+                                        <span><span style="color:${p.color};">●</span> ${name}</span>
+                                        <span style="font-family:monospace;">$${formatMoneyExt(p.value)}</span>
+                                     </div>`;
+                            return html;
+                        } else {
+                            return html + `<div style="color:#94a3b8; font-size: 0.8rem;">该坐标上无数据</div>`;
+                        }
+                    }
+
+                    // 情境 B：高亮某个策略卡片 (仅显示5个边界数据，且颜色自动映射 p.color)
+                    if(targetedKey !== null){
+                        html += `<div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:4px; font-weight:bold;">
+                                    <span>${targetedMeta.icon} ${targetedMeta.title}</span>
+                                </div>`;
+                        const displayOrder = ['极限最高边界', '前10%概率上限', '中位数基准', '后10%概率下限', '极限最低边界'];
+                        let validParams = params.filter(p => displayOrder.includes(p.seriesName));
+                        validParams.sort((a, b) => displayOrder.indexOf(a.seriesName) - displayOrder.indexOf(b.seriesName));
+
+                        validParams.forEach(p => {
+                            html += `<div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:4px; font-size: 0.9rem;">
+                                        <span><span style="color:${p.color};">●</span> ${p.seriesName}</span>
+                                        <span style="font-family:monospace;">$${formatMoneyExt(p.value)}</span>
+                                     </div>`;
+                        });
+                        return html;
+                    }
+
+                    // 情境 C：全局默认模式 (仅显示所有策略中位数)
+                    params.sort((a,b) => b.value - a.value).forEach(p => {
+                        if (p.seriesName && p.seriesName.includes('(中位数)')) {
+                            html += `<div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:4px;">
+                                        <span><span style="color:${p.color};">●</span> ${p.seriesName}</span>
+                                        <span style="font-family:monospace; font-weight:bold;">$${formatMoneyExt(p.value)}</span>
+                                     </div>`;
+                        }
+                    });
+                    return html;
+                }
+            },
+            grid: { left: '10%', right: '8%', bottom: '6%', top: '20px', containLabel: true },
+            xAxis: { type: 'category', data: xAxisData, axisLabel: { color: '#94a3b8' }, boundaryGap: false },
+            yAxis: { 
+                type: 'log', logBase: 10, min: yBounds.min, max: yBounds.max, 
+                axisLabel: { 
+                    color: '#94a3b8', fontSize: 11, hideOverlap: false, 
+                    formatter: (value) => {
+                        if (value === 100) return '{start|100 (起)}';
+                        if (value === 10 || value === 1 || value === 0.1 || value === 0.01) return value.toString();
+                        return toPowerOfTen(value);
+                    },
+                    rich: { start: { color: '#fff', fontWeight: 'bold' } }
+                },
+                splitLine: { lineStyle: { color: '#334155', type: 'dashed' }, show: true },
+                minorTick: { show: true, splitNumber: 5 },
+                minorSplitLine: { show: true, lineStyle: { color: '#1e293b', type: 'dashed', width: 1 } },
+                interval: 1 
+            },
+            series: series
+        }, true);
+    }
+
+    // ---------- 面板与交互 ----------
+    function updateDetailPanel(key) {
+        const agg = globalAggregates[key];
+        if (!agg) return;
+        const meta = currentMeta[key];
+        const finals = agg.finalValues;
+        const runs = document.getElementById('sliderRuns').value;
+        document.getElementById('detailIcon').innerText = meta.icon;
+        document.getElementById('detailTitle').innerHTML = `${meta.title} - 极值与区间解剖 (${runs}次宇宙样本)`;
+        document.getElementById('detailTitle').style.color = meta.color;
+        
+        const trades = xAxisData.length - 1;
+        const minVal = agg.minPath[trades];
+        const maxVal = agg.maxPath[trades];
+        const medVal = agg.medianPath[trades];
+        
+        const distToMin = Math.max(0, medVal - minVal);
+        const distToMax = Math.max(0, maxVal - medVal);
+        
+        const radiusMin = Math.min(minVal * 0.2, distToMin / 3);
+        const radiusMedLow = Math.min(medVal * 0.2, distToMin / 3);
+        const radiusMedHigh = Math.min(medVal * 0.2, distToMax / 3);
+        const radiusMax = Math.min(maxVal * 0.2, distToMax / 3);
+        
+        const minBoundHigh = minVal <= 0.01 ? 0.02 : minVal + Math.max(radiusMin, 0.0001);
+        const medBoundLow = medVal - Math.max(radiusMedLow, 0.0001);
+        const medBoundHigh = medVal + Math.max(radiusMedHigh, 0.0001);
+        const maxBoundLow = maxVal - Math.max(radiusMax, 0.0001);
+
+        document.getElementById('dtMinVal').innerText = '$' + formatMoneyExt(minVal);
+        document.getElementById('dtMedVal').innerText = '$' + formatMoneyExt(medVal);
+        document.getElementById('dtMaxVal').innerText = '$' + formatMoneyExt(maxVal);
+        document.getElementById('dtMinProb').innerText = calculateProbability(finals, minVal, minBoundHigh);
+        document.getElementById('dtMedProb').innerText = calculateProbability(finals, medBoundLow, medBoundHigh);
+        document.getElementById('dtMaxProb').innerText = calculateProbability(finals, maxBoundLow, maxVal);
+    }
+
+    function toggleCard(key) {
+        if (currentActiveCard === key) {
+            currentActiveCard = null; 
+            Object.keys(currentMeta).forEach(k => { const el = document.getElementById('card-' + k); if(el) el.classList.remove('active'); });
+            document.getElementById('detailPanel').style.display = 'none';
+        } else {
+            currentActiveCard = key; 
+            Object.keys(currentMeta).forEach(k => { const el = document.getElementById('card-' + k); if(el) el.classList.remove('active'); });
+            const activeCard = document.getElementById('card-' + key);
+            if(activeCard) activeCard.classList.add('active');
+            document.getElementById('detailPanel').style.display = 'block';
+            updateDetailPanel(key);
+        }
+        isolatedSeriesId = null; 
+        renderChartSeries();
+        renderDistribution();
+        clearBrush(); 
+    }
+
+    // ---------- 核心模拟计算 ----------
+    function runMonteCarlo() {
+        const p = parseFloat(document.getElementById('sliderW').value) / 100;
+        const b = parseFloat(document.getElementById('sliderRR').value);
+        const trades = parseInt(document.getElementById('sliderN').value);
+        const runs = parseInt(document.getElementById('sliderRuns').value); 
+        const q = 1 - p;
+
+        document.getElementById('valW').innerText = (p*100).toFixed(0) + '%';
+        document.getElementById('valRR').innerText = b.toFixed(1);
+        document.getElementById('valN').innerText = trades;
+        document.getElementById('valRuns').innerText = runs;
+
+        let expectancy = (p * b) - q;
+        let f_star = p - (q / b);
+        if (f_star <= 0) f_star = 0;
+        if (!isFinite(f_star)) f_star = 0;
+
+        const insightBox = document.getElementById('dynamicInsight');
+        let evalText = "";
+        let borderColor = "";
+        if (expectancy <= 0) {
+            evalText = `<span style="color:#f43f5e">💀 <b>死亡螺旋：</b> 数学期望为负。大数定律会确保你必定破产，请立刻停止该策略！</span>`;
+            borderColor = "#f43f5e";
+        } else {
+            if (f_star < 0.1) {
+                evalText = `<span style="color:var(--text-main)">🐢 <b>微弱优势：</b> 具备正期望，但容错率极低。防范黑天鹅回撤。</span>`;
+                borderColor = "var(--text-muted)";
+            } else if (f_star < 0.3) {
+                evalText = `<span style="color:#0ea5e9">🔥 <b>黄金系统：</b> 极佳的优势区间！使用精细化微仓能让你获得平滑的复利。</span>`;
+                borderColor = "#0ea5e9";
+            } else {
+                evalText = `<span style="color:#3b82f6">💎 <b>梦幻系统 (或过度拟合)：</b> 理论优势极高。但也请警惕历史回测的“幸存者偏差”。</span>`;
+                borderColor = "#3b82f6";
+            }
+        }
+        insightBox.style.borderLeftColor = borderColor;
+        insightBox.innerHTML = `
+            <div style="margin-bottom: 12px; font-size: 0.8rem;">
+                <strong>📐 理论基石：</strong><br>
+                • <strong>凯利公式：</strong>计算理论上能让资金复利最大化、且不破产的最优比例。<br>
+                • <strong>蒙特卡洛：</strong>用海量平行宇宙抹平“短期运气”，暴露出真实的统计学宿命。
+            </div>
+            <div style="border-top: 1px dashed var(--border-color); padding-top: 12px;">
+                <strong>🩺 当前策略实时诊断：</strong><br>
+                系统数学期望：<span style="font-family:monospace; color:${expectancy > 0 ? '#10b981' : '#f43f5e'}">${expectancy > 0 ? '+' : ''}${expectancy.toFixed(3)} R</span><br>
+                ${evalText}
+            </div>
+        `;
+
+        const fractions = {};
+        for(let key in currentMeta) {
+            fractions[key] = f_star * currentMeta[key].mult;
+            let betElem = document.getElementById('bet' + key);
+            if(betElem) betElem.innerText = (fractions[key] * 100).toFixed(1) + '%';
+        }
+
+        const allPaths = {};
+        const allMaxDd = {};
+        const strategyMin = {};
+        const strategyMax = {};
+        for (const key in fractions) {
+            allPaths[key] = [];
+            allMaxDd[key] = [];
+            strategyMin[key] = Infinity;
+            strategyMax[key] = -Infinity;
+        }
+        
+        const CEILING_LIMIT = 1e80;
+        const FLOOR_LIMIT = 0.001;
+
+        for (let r = 0; r < runs; r++) {
+            let eq = {};
+            let peak = {};
+            let maxDd = {};
+            let path = {};
+            
+            for (const key in fractions) {
+                eq[key] = 100;
+                peak[key] = 100;
+                maxDd[key] = 0;
+                path[key] = [100];
+            }
+            
+            for (let t = 1; t <= trades; t++) {
+                let isWin = Math.random() < p;
+                for (const key in fractions) {
+                    let frac = fractions[key];
+                    if (eq[key] > FLOOR_LIMIT && frac > 0 && f_star > 0) {
+                        if (isWin) eq[key] = eq[key] * (1 + b * frac);
+                        else eq[key] = eq[key] * (1 - frac);
+                        if (eq[key] > CEILING_LIMIT) eq[key] = CEILING_LIMIT;
+                        if (eq[key] < FLOOR_LIMIT) eq[key] = FLOOR_LIMIT;
+                    } else if (eq[key] <= FLOOR_LIMIT) eq[key] = FLOOR_LIMIT;
+                    
+                    path[key].push(eq[key]);
+                    
+                    if (eq[key] > peak[key]) peak[key] = eq[key];
+                    let currentDd = (peak[key] - eq[key]) / peak[key];
+                    if (currentDd > maxDd[key]) maxDd[key] = currentDd;
+
+                    if (eq[key] < strategyMin[key]) strategyMin[key] = eq[key];
+                    if (eq[key] > strategyMax[key]) strategyMax[key] = eq[key];
+                }
+            }
+            for (const key in fractions) {
+                allPaths[key].push(path[key]);
+                allMaxDd[key].push(maxDd[key]);
+            }
+        }
+        
+        globalStrictMin = Math.min(...Object.values(strategyMin));
+        globalStrictMax = Math.max(...Object.values(strategyMax));
+
+        xAxisData = Array.from({length: trades + 1}, (_, i) => i);
+        globalAggregates = {}; 
+
+        for (const key in fractions) {
+            const paths = allPaths[key];
+            const finalValues = paths.map(p => p[trades]);
+            let maxVal = -1, minVal = Infinity, maxIdx = 0, minIdx = 0;
+            for(let i=0; i<runs; i++){
+                if(finalValues[i] > maxVal){ maxVal = finalValues[i]; maxIdx = i; }
+                if(finalValues[i] < minVal){ minVal = finalValues[i]; minIdx = i; }
+            }
+            const ruinRate = (finalValues.filter(v => v < 10).length / runs * 100).toFixed(1);
+            const halveRate = (finalValues.filter(v => v < 50).length / runs * 100).toFixed(1);
+            
+            allMaxDd[key].sort((a,b) => a - b);
+            const medianDd = allMaxDd[key][Math.floor(runs * 0.50)];
+            const medianDdStr = (medianDd * 100).toFixed(1);
+
+            const agg = {
+                finalValues: finalValues,
+                maxPath: paths[maxIdx], minPath: paths[minIdx],
+                absMin: strategyMin[key], absMax: strategyMax[key],
+                medianPath: [], p90Path: [], p10Path: [],
+                samples: paths.slice(0, Math.min(30, runs)), 
+                ruinPct: ruinRate,
+                halvePct: halveRate,
+                medianDrawdown: medianDdStr
+            };
+            
+            for (let t = 0; t <= trades; t++) {
+                let stepVals = new Float64Array(runs);
+                for(let r=0; r<runs; r++) stepVals[r] = paths[r][t];
+                stepVals.sort((a,b) => a - b);
+                agg.p90Path.push(stepVals[Math.floor(runs * 0.90)]);
+                agg.medianPath.push(stepVals[Math.floor(runs * 0.50)]);
+                agg.p10Path.push(stepVals[Math.floor(runs * 0.10)]);
+            }
+            globalAggregates[key] = agg;
+            
+            const elMed = document.getElementById('med' + key);
+            if(elMed) elMed.innerText = '$' + formatMoneyExt(agg.medianPath[trades]);
+            
+            const elRuin = document.getElementById('ruin' + key);
+            if(elRuin) {
+                elRuin.innerText = agg.ruinPct + '%';
+                elRuin.className = parseFloat(agg.ruinPct) > 20 ? 'stat-val danger' : 'stat-val';
+            }
+            
+            const elHalve = document.getElementById('halve' + key);
+            if(elHalve) {
+                elHalve.innerText = agg.halvePct + '%';
+                elHalve.className = parseFloat(agg.halvePct) > 30 ? 'stat-val danger' : 'stat-val';
+            }
+            
+            const elDd = document.getElementById('dd' + key);
+            if(elDd) {
+                elDd.innerText = agg.medianDrawdown + '%';
+                elDd.className = parseFloat(agg.medianDrawdown) > 40 ? 'stat-val danger' : 'stat-val'; 
+            }
+        }
+        
+        isolatedSeriesId = null; 
+        renderChartSeries();
+        renderDistribution();
+        clearBrush(); 
+        if (currentActiveCard) updateDetailPanel(currentActiveCard);
+    }
+
+    ['sliderW', 'sliderRR', 'sliderN', 'sliderRuns'].forEach(id => {
+        document.getElementById(id).addEventListener('input', runMonteCarlo);
+    });
+    window.addEventListener('resize', () => { chart.resize(); distChart.resize(); });
+    
+    renderStatCards();
+    setTimeout(runMonteCarlo, 100);
+</script>
+</body>
+</html>
