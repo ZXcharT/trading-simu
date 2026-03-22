@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>策略模拟器 | 寻找最优风险仓位</title>
+    <title>策略模拟器 | 凯利公式与资金曲线诊断工具</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
     <style>
         :root {
@@ -261,6 +261,30 @@
         110, 120, 130, 140, 150, 160, 170, 180, 190, 200,                                   // 10个 (较松 100-200%)
         220, 240, 260, 280, 300                                                             // 5个  (极松 200-300%)
     ];
+
+    // 全局方法：同步数据到仓位计算器
+    function applyKellyToCalc(type, full, half, btn) {
+        const data = { full: full * 100, half: half * 100, timestamp: Date.now() };
+        localStorage.setItem('zxchart_kelly_' + type, JSON.stringify(data));
+        
+        // 视觉反馈
+        const originalText = btn.innerText;
+        const originalBg = btn.style.background;
+        const originalColor = btn.style.color;
+        const originalBorder = btn.style.borderColor;
+        
+        btn.innerText = '✅ 已同步至计算器';
+        btn.style.background = 'rgba(16, 185, 129, 0.2)';
+        btn.style.color = '#10b981';
+        btn.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+        
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = originalBg;
+            btn.style.color = originalColor;
+            btn.style.borderColor = originalBorder;
+        }, 1500);
+    }
 
     // ---------- 逆向推算算法支持 ----------
     function fastMonteCarloDD(p, b, trades, f, runs = 300) {
@@ -551,12 +575,12 @@
         const option = {
             backgroundColor: 'transparent',
             tooltip: { trigger: 'item', axisPointer: { type: 'shadow' } },
-            // 微调了 bottom 以防止横轴文字被裁切
+            // 微调 bottom 以防横轴文字被裁切
             grid: { left: '12%', right: '8%', top: '10%', bottom: '12%', containLabel: false },
             brush: { toolbox: ['clear'], yAxisIndex: 0, brushStyle: { borderWidth: 1, color: 'rgba(196, 181, 253, 0.2)', borderColor: 'rgba(196, 181, 253, 0.8)' } },
             xAxis: {
                 type: 'value', name: '概率密度 (相对 %)', nameLocation: 'middle', nameGap: 28,
-                max: maxKdeDensity, // 严格限制最大值为 100% 相对密度
+                max: maxKdeDensity, // 严格限制最大值为 100%
                 axisLabel: { color: '#94a3b8', fontSize: 10, formatter: (val) => ((val / maxKdeDensity) * 100).toFixed(0) + '%' },
                 splitLine: { lineStyle: { color: '#334155' } }
             },
@@ -920,12 +944,16 @@
                 ${constraints.join('<br>')}
             `;
 
-            // 右侧：满高度绿底卡片
+            // 右侧：新增发送至计算器的按钮
             document.getElementById('recBoxWrapper').innerHTML = `
-                <div style="padding: 0 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-width: 120px;">
+                <div style="flex:1; padding: 0 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px;">
                     <span style="color: #10b981; font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">✅ 建议风险敞口</span>
                     <span title="单笔最大风险" style="font-family: monospace; font-size: 1.15rem; color: #fff; margin-bottom: 4px;">满: ${(recFull*100).toFixed(2)}%</span>
                     <span title="半风险测试仓" style="font-family: monospace; font-size: 0.95rem; color: #94a3b8;">半: ${(recHalf*100).toFixed(2)}%</span>
+                </div>
+                <div style="display: flex; gap: 6px; margin-top: 8px; width: 100%;">
+                    <button onclick="applyKellyToCalc('B1', ${recFull}, ${recHalf}, this)" style="flex:1; padding: 6px 0; font-size: 0.75rem; font-weight:bold; border-radius: 4px; background: rgba(139, 92, 246, 0.1); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(139, 92, 246, 0.2)'" onmouseout="this.style.background='rgba(139, 92, 246, 0.1)'">应用到 B1</button>
+                    <button onclick="applyKellyToCalc('B2', ${recFull}, ${recHalf}, this)" style="flex:1; padding: 6px 0; font-size: 0.75rem; font-weight:bold; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">应用到 B2</button>
                 </div>
             `;
         }
