@@ -1,0 +1,21 @@
+{
+  "name": "凯利策略模拟器 | 知行图表交易",
+  "short_name": "策略模拟",
+  "description": "基于凯利公式与蒙特卡洛算法的资金曲线诊断工具",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
