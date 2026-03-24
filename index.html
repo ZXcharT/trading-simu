@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>策略模拟器 | 凯利公式与资金曲线诊断工具</title>
+
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="策略模拟">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
     <style>
         :root {
@@ -1352,6 +1359,21 @@
     
     renderStatCards();
     setTimeout(runMonteCarlo, 100);
+
+    // =========================================
+    // 🌐 注册 PWA Service Worker
+    // =========================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('PWA ServiceWorker 注册成功，作用域为: ', registration.scope);
+                })
+                .catch(err => {
+                    console.log('PWA ServiceWorker 注册失败: ', err);
+                });
+        });
+    }
 </script>
 </body>
 </html>
