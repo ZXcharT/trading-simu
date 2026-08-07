@@ -36,7 +36,7 @@ function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限
 function targetStatusText(reverse){if(reverse.targetRequiredRisk===-1)return'当前策略不可达';return reverse.targetReachable?'安全上限内可达':'需突破风险边界'}
 
 function setStatus(status,label,meta=''){
-  state.status=status;$('stateLabel').textContent=label;$('stateMeta').textContent=meta;
+  state.status=status;$('stateLabel').textContent=label;$('stateMeta').textContent=meta;$('mobileStateLabel').textContent=label;
   $('stateDot').className=`state-dot ${status==='completed'?'complete':status}`;
 }
 function updateProgress(title,detail,percent=0){$('progressTitle').textContent=title;$('progressDetail').textContent=detail;$('progressBar').style.transform=`scaleX(${Math.max(0,Math.min(100,percent))/100})`}

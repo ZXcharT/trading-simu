@@ -27,9 +27,8 @@
 </nav>
 <header class="layout-inner page-head">
   <div><h1>交易模拟器</h1><p>用随机路径检验资金增长、回撤与风险上限</p></div>
-  <div class="run-state"><span id="stateDot" class="state-dot"></span><strong id="stateLabel">准备计算</strong><span id="stateMeta">默认参数</span></div>
 </header>
-<button id="mobileParamsButton" class="mobile-params" type="button">调整参数</button>
+<button id="mobileParamsButton" class="mobile-params" type="button">调整参数 <span id="mobileStateLabel">准备计算</span></button>
 <div id="drawerOverlay" class="drawer-overlay"></div>
 <main class="layout-inner workspace">
   <aside id="parameterPanel" class="parameter-panel" aria-label="模拟参数">
@@ -47,12 +46,17 @@
       <label class="range-field"><span>可承受回撤</span><output id="maxDrawdownValue">20%</output><input id="maxDrawdown" type="range" min="5" max="60" step="1" value="20"></label>
       <label class="range-field"><span>年均交易笔数</span><output id="annualTradesValue">50</output><input id="annualTrades" type="range" min="25" max="200" step="1" value="50"></label>
     </details>
-    <p class="simulation-depth">深度模拟 · 2,000 次共同随机路径</p>
-    <div class="run-actions"><button id="runButton" class="primary-button" type="button">运行模拟</button><button id="reshuffleButton" class="secondary-button" type="button">重新抽样</button></div>
+    <div class="simulation-footer">
+      <div class="simulation-status" aria-live="polite">
+        <div class="simulation-status-line"><span class="simulation-depth">深度模拟 · 2,000 次共同随机路径</span><div class="simulation-state"><span id="stateDot" class="state-dot"></span><strong id="stateLabel">准备计算</strong><button id="cancelButton" type="button" disabled>取消</button></div></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+        <span id="stateMeta" class="sr-only">默认参数</span><strong id="progressTitle" class="sr-only">准备计算</strong><span id="progressDetail" class="sr-only">默认参数将自动运行</span>
+      </div>
+      <div class="run-actions"><button id="runButton" class="primary-button" type="button">运行模拟</button><button id="reshuffleButton" class="secondary-button" type="button">重新抽样</button></div>
+    </div>
   </aside>
 
   <div class="result-column">
-    <section class="progress-row" aria-live="polite"><div><strong id="progressTitle">准备计算</strong><span id="progressDetail">默认参数将自动运行</span></div><div class="progress-track"><span id="progressBar"></span></div><button id="cancelButton" type="button" disabled>取消</button></section>
     <section class="decision-summary">
       <article><div class="summary-heading"><span class="eyebrow">策略状态</span><strong id="strategyStatus">等待结果</strong></div><dl><div><dt>数学期望</dt><dd id="expectancyResult">—</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">—</dd></div></dl></article>
       <article class="risk-conclusion"><div class="summary-heading"><span class="eyebrow">建议单笔风险上限</span><strong id="recommendedRisk">—</strong></div><dl><div><dt>测试风险</dt><dd id="testRisk">—</dd></div><div><dt>风险上限来自</dt><dd id="limitingFactor">—</dd></div><div><dt>收益目标</dt><dd id="targetStatus">—</dd></div></dl></article>
