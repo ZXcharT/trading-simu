@@ -96,6 +96,18 @@ typography:
     fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Noto Sans SC, sans-serif"
     fontSize: "27px"
     fontWeight: 680
+  summary-value:
+    fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Noto Sans SC, sans-serif"
+    fontSize: "20px"
+    fontWeight: 700
+  summary-risk:
+    fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Noto Sans SC, sans-serif"
+    fontSize: "26px"
+    fontWeight: 700
+  mobile-summary-risk:
+    fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Noto Sans SC, sans-serif"
+    fontSize: "25px"
+    fontWeight: 700
 rounded:
   control: "0px"
   surface: "0px"
@@ -172,7 +184,7 @@ OneChart 家族的中性纸面、方角、细规则线和紧凑排版保持不�
 状态条显示准备、计算中、结果过期、完成、取消或失败。进度只有Worker真实阶段更新；计算中保留上一次完整结果。
 
 ### Decision Summary
-三列依次为策略状态、当前风险结论和仓位交接。建议风险上限是唯一大数字；测试风险、风险上限来源和收益目标可达性为次级证据。收益目标不得显示为风险限制因素。负期望时禁用买点交接。
+三列依次为策略状态、当前风险结论和仓位交接。每列采用紧凑结论条：标签在左、主值在右，次级证据收在下方，禁止为主值预留空白大块。建议风险上限是唯一大数字；测试风险、风险上限来源和收益目标可达性为次级证据。收益目标不得显示为风险限制因素。负期望时禁用买点交接。
 
 ### Risk Ladder
 默认展示围绕建议上限形成的五档风险，凯利理论档提供八档高级比较。一次运行缓存两组共享随机路径的结果，切换必须即时且不触发Worker。单笔风险百分比是每个档位的主数字，不能降为辅助小字。档位是连续数据单元，不是独立浮动卡片。

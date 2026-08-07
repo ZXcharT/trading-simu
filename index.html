@@ -54,9 +54,9 @@
   <div class="result-column">
     <section class="progress-row" aria-live="polite"><div><strong id="progressTitle">准备计算</strong><span id="progressDetail">默认参数将自动运行</span></div><div class="progress-track"><span id="progressBar"></span></div><button id="cancelButton" type="button" disabled>取消</button></section>
     <section class="decision-summary">
-      <article><span class="eyebrow">策略状态</span><strong id="strategyStatus">等待结果</strong><dl><div><dt>数学期望</dt><dd id="expectancyResult">—</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">—</dd></div></dl></article>
-      <article class="risk-conclusion"><span class="eyebrow">当前结论</span><strong id="recommendedRisk">—</strong><p>建议单笔风险上限</p><dl><div><dt>测试风险</dt><dd id="testRisk">—</dd></div><div><dt>风险上限来自</dt><dd id="limitingFactor">—</dd></div><div><dt>收益目标</dt><dd id="targetStatus">—</dd></div></dl></article>
-      <article class="handoff"><span class="eyebrow">用于仓位计算</span><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">模拟完成后可带入仓位计算器</p><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器</a></article>
+      <article><div class="summary-heading"><span class="eyebrow">策略状态</span><strong id="strategyStatus">等待结果</strong></div><dl><div><dt>数学期望</dt><dd id="expectancyResult">—</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">—</dd></div></dl></article>
+      <article class="risk-conclusion"><div class="summary-heading"><span class="eyebrow">建议单笔风险上限</span><strong id="recommendedRisk">—</strong></div><dl><div><dt>测试风险</dt><dd id="testRisk">—</dd></div><div><dt>风险上限来自</dt><dd id="limitingFactor">—</dd></div><div><dt>收益目标</dt><dd id="targetStatus">—</dd></div></dl></article>
+      <article class="handoff"><div class="summary-heading handoff-heading"><span class="eyebrow">用于仓位计算</span><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器</a></div><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">模拟完成后可带入仓位计算器</p></article>
     </section>
 
     <section class="ladder-section">
