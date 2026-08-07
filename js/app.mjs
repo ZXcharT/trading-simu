@@ -16,7 +16,11 @@ const charts = createCharts({pathElement:$('pathChart'),distributionElement:$('d
 function createWorker() {
   const next = new Worker(new URL('./simulation.worker.mjs',import.meta.url),{type:'module'});
   next.addEventListener('message',handleWorkerMessage);
-  next.addEventListener('error',event=>handleFailure(event.message||'Worker 加载失败'));
+  next.addEventListener('error',event=>{
+    event.preventDefault();
+    if(worker===next){next.terminate();worker=null}
+    handleFailure(event.message||'Worker 加载失败');
+  });
   return next;
 }
 function ensureWorker(){if(!worker)worker=createWorker();return worker;}
@@ -36,7 +40,10 @@ function updateDraftFromInputs(){
   const summary=deterministicSummary(state.draft);
   $('expectancyPreview').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyPreview').classList.toggle('negative',summary.expectancy<=0);$('breakEvenPreview').textContent=formatPercent(summary.breakEvenWinRate,1);$('kellyPreview').textContent=formatPercent(summary.fullKelly*100,2);
   document.querySelectorAll('[data-runs]').forEach(button=>button.classList.toggle('active',+button.dataset.runs===state.draft.runs));
-  if(state.committed&&!sameParams(state.draft,state.committed)){setStatus('stale','参数已改变','需要重新运行');updateProgress('结果已过期','当前仍显示上一次完整结果',0)}
+  if(state.committed&&!sameParams(state.draft,state.committed)){
+    if(state.activeJobId!=null)setStatus('computing','计算中','草稿已改变，可重新运行');
+    else{setStatus('stale','参数已改变','需要重新运行');updateProgress('结果已过期','当前仍显示上一次完整结果',0)}
+  }
 }
 function requestRun({reshuffle=false}={}){
   updateDraftFromInputs();
@@ -49,7 +56,7 @@ function requestRun({reshuffle=false}={}){
   }else dispatchRequest(request);
 }
 function dispatchRequest(request){
-  state.activeJobId=request.jobId;state.status='computing';state.committed={...request.params};$('cancelButton').disabled=false;$('runButton').disabled=true;
+  state.activeJobId=request.jobId;state.status='computing';state.committed={...request.params};$('cancelButton').disabled=false;$('runButton').disabled=false;$('runButton').textContent='重新运行';
   setStatus('computing','计算中',`${request.params.runs.toLocaleString()} 次模拟`);updateProgress('准备计算','正在初始化 Worker',1);ensureWorker().postMessage(request);
 }
 function dispatchPending(){if(!state.pending)return;const request=state.pending;state.pending=null;dispatchRequest(request)}
@@ -57,7 +64,7 @@ function cancelCurrent(){
   if(state.activeJobId==null)return;state.pending=null;ensureWorker().postMessage({type:'cancel',jobId:state.activeJobId});updateProgress('正在取消','保留上一次完整结果',0);
   clearTimeout(cancelTimer);cancelTimer=setTimeout(()=>{worker?.terminate();worker=createWorker();state.activeJobId=null;finishCancelled()},500);
 }
-function finishCancelled(){clearTimeout(cancelTimer);cancelTimer=null;$('cancelButton').disabled=true;$('runButton').disabled=false;setStatus(state.lastGoodResult?'stale':'idle','已取消',state.lastGoodResult?'仍显示上次结果':'未生成结果');updateProgress('计算已取消','可以修改参数后重新运行',0);dispatchPending()}
+function finishCancelled(){clearTimeout(cancelTimer);cancelTimer=null;$('cancelButton').disabled=true;$('runButton').disabled=false;$('runButton').textContent='运行模拟';setStatus(state.lastGoodResult?'stale':'idle','已取消',state.lastGoodResult?'仍显示上次结果':'未生成结果');updateProgress('计算已取消','可以修改参数后重新运行',0);dispatchPending()}
 function handleWorkerMessage(event){
   const message=event.data||{};
   if(message.type==='cancelled'&&message.jobId===state.activeJobId){state.activeJobId=null;finishCancelled();return}
@@ -65,11 +72,14 @@ function handleWorkerMessage(event){
   if(message.type==='progress'){updateProgress(stageNames[message.stage]||'计算中',`${message.percent.toFixed(0)}%`,message.percent);return}
   if(message.type==='error'){handleFailure(message.message);return}
   if(message.type==='result'){
-    clearTimeout(cancelTimer);cancelTimer=null;state.activeJobId=null;state.seed=message.seed;state.lastGoodResult=message.result;state.committed={...message.result.params};$('cancelButton').disabled=true;$('runButton').disabled=false;
-    setStatus('completed','计算完成',`${message.result.params.runs.toLocaleString()} 次 · seed ${message.seed}`);updateProgress('计算完成','结果已原子更新',100);renderResult(message.result);
+    clearTimeout(cancelTimer);cancelTimer=null;state.activeJobId=null;
+    if(state.pending){dispatchPending();return}
+    state.seed=message.seed;state.lastGoodResult=message.result;state.committed={...message.result.params};$('cancelButton').disabled=true;$('runButton').disabled=false;$('runButton').textContent='运行模拟';renderResult(message.result);
+    if(sameParams(state.draft,message.result.params)){setStatus('completed','计算完成',`${message.result.params.runs.toLocaleString()} 次 · seed ${message.seed}`);updateProgress('计算完成','结果已原子更新',100)}
+    else{setStatus('stale','参数已改变','当前显示刚完成的上一组参数');updateProgress('结果已过期','运行后应用当前草稿',0)}
   }
 }
-function handleFailure(message){state.activeJobId=null;$('cancelButton').disabled=true;$('runButton').disabled=false;setStatus('error','计算失败','保留上一次结果');updateProgress('计算失败',message,0);$('errorPanel').hidden=false;$('errorPanel').textContent=`${message}。请降低模拟精度后重试。`}
+function handleFailure(message){clearTimeout(cancelTimer);cancelTimer=null;state.activeJobId=null;state.pending=null;$('cancelButton').disabled=true;$('runButton').disabled=false;$('runButton').textContent='运行模拟';setStatus('error','计算失败','保留上一次结果');updateProgress('计算失败',message,0);$('errorPanel').hidden=false;$('errorPanel').textContent=`${message}。请降低模拟精度后重试。`}
 
 function renderResult(result){
   $('errorPanel').hidden=true;const {summary,reverse}=result;
@@ -102,7 +112,7 @@ function syncTo(buyPoint){
   $('syncStatus').textContent=sync.ok?`已保存到${label} · ${time}`:`${label}同步受限，请打开仓位计算器确认`;
 }
 
-function setBasis(basis){if(state.draft.basis===basis)return;state.draft={...state.draft,basis};document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕建议风险上限比较不同档位':'比较完整凯利理论档位（高级）';if(state.committed){setStatus('stale','比较基准已改变','需要重新运行');updateProgress('结果已过期','运行后更新风险档位和图表',0)}}
+function setBasis(basis){if(state.draft.basis===basis)return;state.draft={...state.draft,basis};document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕建议风险上限比较不同档位':'比较完整凯利理论档位（高级）';if(state.committed){if(state.activeJobId!=null)setStatus('computing','计算中','比较基准已改变，可重新运行');else{setStatus('stale','比较基准已改变','需要重新运行');updateProgress('结果已过期','运行后更新风险档位和图表',0)}}}
 function syncTheme(){const dark=document.documentElement.dataset.theme==='dark';$('themeLabel').textContent=dark?'浅色':'深色';$('themeToggle').setAttribute('aria-label',dark?'切换到浅色模式':'切换到深色模式');document.querySelector('meta[name=theme-color]').content=dark?'#0f1216':'#f3f4f6'}
 function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;document.documentElement.style.colorScheme=next;try{localStorage.setItem('onechart-theme',next)}catch{}syncTheme();charts.refreshTheme()}
 function toggleDrawer(open){$('parameterPanel').classList.toggle('active',open);$('drawerOverlay').classList.toggle('active',open)}
