@@ -31,8 +31,9 @@ function sameParams(a,b){
 }
 function resultForBasis(result,basis=state.viewBasis){return {...result,params:{...result.params,basis},strategies:result.strategiesByBasis[basis]}}
 function formatPercent(value,digits=2){return Number.isFinite(value)?`${value.toFixed(digits)}%`:'—'}
+function formatPoint(value){return Number.isFinite(value)?`${value>=0?'+':''}${value.toFixed(1)}个百分点`:'—'}
 function formatMoney(value){if(!Number.isFinite(value))return'—';if(value>=1e8)return`${(value/1e8).toFixed(2)}亿`;if(value>=1e4)return`${(value/1e4).toFixed(2)}万`;return value.toFixed(1)}
-function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限','negative-expectancy':'负期望'})[value]||'—'}
+function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限','negative-expectancy':'数学期望 ≤ 0'})[value]||'—'}
 function targetStatusText(reverse){if(reverse.targetRequiredRisk===-1)return'当前策略不可达';return reverse.targetReachable?'安全上限内可达':'需突破风险边界'}
 
 function setStatus(status,label,meta=''){
@@ -89,10 +90,10 @@ function handleFailure(message){clearTimeout(cancelTimer);cancelTimer=null;state
 function renderResult(result){
   $('errorPanel').hidden=true;const {summary,reverse}=result;
   const positive=summary.expectancy>0;
-  $('strategyStatus').textContent=positive?'正期望':'负期望';$('strategyStatus').style.color=positive?'var(--gain)':'var(--risk)';$('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
+  $('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyResult').style.color=positive?'var(--gain)':'var(--risk)';$('breakEvenResult').textContent=formatPercent(summary.breakEvenWinRate,1);$('winEdgeResult').textContent=formatPoint(result.params.winRate-summary.breakEvenWinRate);$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
   $('recommendedRisk').textContent=positive?formatPercent(reverse.recommendedRisk*100):'不提供建议';$('testRisk').textContent=positive?formatPercent(reverse.testRisk*100):'—';$('limitingFactor').textContent=limitingText(reverse.limitingFactor);$('targetStatus').textContent=positive?targetStatusText(reverse):'—';
   for(const id of ['syncCallback','syncStartup'])$(id).disabled=!positive||reverse.recommendedRisk<=0;
-  $('syncStatus').textContent=positive?'选择买点类型，将风险建议带入仓位计算器':'负期望策略不提供可执行风险建议';
+  $('syncStatus').textContent=positive?'选择买点类型，将风险参数应用到仓位计算器':'数学期望 ≤ 0，暂不提供风险参数';
   renderBasis(result);
 }
 function renderBasis(result){
@@ -118,7 +119,7 @@ function syncTo(buyPoint){
   const sync=syncRiskSuggestion(buyPoint,result.reverse.recommendedRisk*100,result.reverse.testRisk*100);
   const label=buyPoint==='callback'?'回调买点':'启动买点';
   const time=new Date(sync.timestamp).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-  $('syncStatus').textContent=sync.ok?`已保存到${label} · ${time}`:`${label}同步受限，请打开仓位计算器确认`;
+  $('syncStatus').textContent=sync.ok?`已应用到${label} · ${time}`:`${label}应用受限，请打开仓位计算器确认`;
 }
 
 function setBasis(basis){if(state.viewBasis===basis)return;state.viewBasis=basis;document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕建议风险上限比较不同档位':'比较完整凯利理论档位（高级）';if(state.lastGoodResult)renderBasis(state.lastGoodResult)}
