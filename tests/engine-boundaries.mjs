@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {CancelledError,simulate} from '../js/engine.mjs';
+import {createLcg} from '../js/random.mjs';
+const base={winRate:45,rewardRisk:2,trades:50,runs:100,targetReturnIndex:30,maxDrawdown:20,annualTrades:50,basis:'decision'};
+const negative=await simulate({...base,winRate:20,rewardRisk:.5},createLcg(1));assert.equal(negative.summary.expectancy<0,true);assert.equal(negative.reverse.recommendedRisk,0);assert.ok(negative.strategies.every(s=>s.median.every(v=>v===100)));
+let cancelled=false,yields=0;try{await simulate({...base,trades:500,runs:2000,basis:'theory'},createLcg(2),{isCancelled:()=>cancelled,yieldControl:async()=>{yields++;if(yields===3)cancelled=true}})}catch(error){assert.ok(error instanceof CancelledError)}assert.equal(cancelled,true);assert.equal(yields,3);
+const capped=await simulate({...base,winRate:75,rewardRisk:8,trades:500,runs:100},createLcg(3));assert.ok(capped.strategies.every(s=>s.absoluteMax<=1e80&&s.absoluteMin>=.001));
+console.log('ENGINE_BOUNDARY_CANCEL_PASS 3');

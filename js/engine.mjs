@@ -77,7 +77,7 @@ async function checkpoint(runtime, stage, completed, total) {
   if (runtime.isCancelled?.()) throw new CancelledError();
 }
 
-async function drawdownP80(p, b, trades, fraction, random, runtime, runs = 300) {
+async function drawdownP80(p, b, trades, fraction, random, runtime, progressOffset = 0, runs = 300) {
   if (fraction <= 0) return 0;
   const values = new Float64Array(runs);
   for (let r = 0; r < runs; r++) {
@@ -89,7 +89,7 @@ async function drawdownP80(p, b, trades, fraction, random, runtime, runs = 300) 
       if (drawdown > maxDrawdown) maxDrawdown = drawdown;
     }
     values[r] = maxDrawdown;
-    if ((r + 1) % 25 === 0) await checkpoint(runtime, 'reverse', r + 1, runs * 8);
+    if ((r + 1) % 25 === 0) await checkpoint(runtime, 'reverse', progressOffset + r + 1, runs * 8);
   }
   values.sort();
   return values[Math.floor(runs * 0.8)];
@@ -104,7 +104,7 @@ async function reverseRisk(params, summary, random, runtime) {
   let low = 0, high = summary.fullKelly, drawdownRisk = summary.fullKelly;
   for (let step = 0; step < 8; step++) {
     const mid = (low + high) / 2;
-    const p80 = await drawdownP80(summary.p, summary.b, params.trades, mid, random, runtime);
+    const p80 = await drawdownP80(summary.p, summary.b, params.trades, mid, random, runtime, step * 300);
     if (p80 > params.maxDrawdown / 100) high = mid;
     else { low = mid; drawdownRisk = mid; }
   }
