@@ -32,6 +32,16 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
   let current = null;
   let selectedId = null;
   let scaleMode = 'focus';
+  let distributionDensityMax = 1;
+  const pathTooltip=document.createElement('div');pathTooltip.className='chart-tooltip';pathTooltip.hidden=true;pathElement.appendChild(pathTooltip);
+  const distributionTooltip=document.createElement('div');distributionTooltip.className='chart-tooltip';distributionTooltip.hidden=true;distributionElement.appendChild(distributionTooltip);
+
+  function showTooltip(element,tooltip,x,y,title,detail){
+    tooltip.replaceChildren();const strong=document.createElement('strong');strong.textContent=title;const span=document.createElement('span');span.textContent=detail;tooltip.append(strong,span);tooltip.hidden=false;
+    const left=Math.min(x+12,element.clientWidth-tooltip.offsetWidth-8);const top=Math.max(8,Math.min(y-12,element.clientHeight-tooltip.offsetHeight-8));tooltip.style.left=`${Math.max(8,left)}px`;tooltip.style.top=`${top}px`;
+  }
+  function hideTooltip(tooltip){tooltip.hidden=true}
+  function closestLogIndex(data,target){let best=0,bestDistance=Infinity;const targetLog=Math.log(Math.max(.001,target));for(let i=0;i<data.length;i++){const distance=Math.abs(Math.log(Math.max(.001,data[i][1]))-targetLog);if(distance<bestDistance){best=i;bestDistance=distance}}return best}
 
   function renderPath() {
     if (!current) return;
@@ -59,7 +69,7 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
     series.push({ name:'起始资金',type:'line',data:[],markLine:{silent:true,symbol:'none',data:[{yAxis:100}],lineStyle:{color:colors.line},label:{formatter:'起始资金 100',color:colors.muted}} });
     pathChart.setOption({
       animation:false,backgroundColor:'transparent',
-      tooltip:{trigger:'item',backgroundColor:colors.paper,borderColor:colors.line,textStyle:{color:colors.text},formatter:item=>`${item.seriesName}<br>第 ${item.dataIndex} 笔 · $${money(item.value)}`},
+      tooltip:{show:false},
       grid:{left:58,right:30,top:28,bottom:44},
       legend:compactLegend(colors,legendData),
       xAxis:{type:'category',boundaryGap:false,data:Array.from({length:current.params.trades+1},(_,i)=>i),name:'交易次数',nameLocation:'middle',nameGap:28,axisLabel:{color:colors.muted},axisLine:{lineStyle:{color:colors.line}},splitLine:{show:false}},
@@ -75,8 +85,9 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
     const rows = selected ? [selected] : current.strategies;
     let densityMax = 0;
     for (const row of rows) for (const value of row.distributionY) if (value > densityMax) densityMax=value;
+    distributionDensityMax=densityMax||1;
     const series = rows.map(row => ({
-      name:row.name,type:'line',symbol:'none',smooth:true,
+      name:row.name,type:'line',symbol:'none',smooth:true,triggerLineEvent:true,
       data:Array.from(row.distributionX, (value,index)=>[row.distributionY[index],value]),
       lineStyle:{color:row.color,width:selected?2.5:1.8,opacity:selected?1:.75},itemStyle:{color:row.color},
       areaStyle:selected?{color:row.color,opacity:.08}:undefined
@@ -92,7 +103,7 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
     const range = bounds(current,selected,scaleMode);
     distributionChart.setOption({
       animation:false,backgroundColor:'transparent',
-      tooltip:{trigger:'item',backgroundColor:colors.paper,borderColor:colors.line,textStyle:{color:colors.text},formatter:p=>`${p.seriesName}<br>资金 $${money(p.value[1])}`},
+      tooltip:{show:false},
       brush:{toolbox:['clear'],yAxisIndex:0,brushMode:'single',brushStyle:{borderWidth:1,borderColor:colors.ink,color:'rgba(85,125,168,.12)'}},
       grid:{left:68,right:30,top:28,bottom:44},
       legend:compactLegend(colors,rows.map(row=>row.name)),
@@ -102,6 +113,21 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
     },true);
     distributionChart.dispatchAction({type:'takeGlobalCursor',key:'brush',brushOption:{brushType:'lineY',brushMode:'single'}});
   }
+
+  pathChart.getZr().on('mousemove',event=>{
+    const pixel=[event.offsetX,event.offsetY];if(!current||!pathChart.containPixel({gridIndex:0},pixel)){hideTooltip(pathTooltip);return}
+    const option=pathChart.getOption();const coordinate=pathChart.convertFromPixel({xAxisIndex:0,yAxisIndex:0},pixel);const dataIndex=Math.max(0,Math.min(current.params.trades,Math.round(Number(coordinate[0]))));let nearest=null;
+    option.series.forEach((series,seriesIndex)=>{if(!series.data?.length)return;const raw=series.data[dataIndex];const value=Number(raw?.value??raw);if(!Number.isFinite(value)||value<=0)return;const point=pathChart.convertToPixel({xAxisIndex:0,yAxisIndex:0},[dataIndex,value]);const distance=Math.hypot(point[0]-pixel[0],point[1]-pixel[1]);if(!nearest||distance<nearest.distance)nearest={seriesIndex,name:series.name,value,distance}});
+    if(nearest&&nearest.distance<=18)showTooltip(pathElement,pathTooltip,event.offsetX,event.offsetY,nearest.name,`第 ${dataIndex} 笔 · $${money(nearest.value)}`);else hideTooltip(pathTooltip);
+  });
+  pathChart.getZr().on('globalout',()=>hideTooltip(pathTooltip));
+  distributionChart.getZr().on('mousemove',event=>{
+    const pixel=[event.offsetX,event.offsetY];if(!current||!distributionChart.containPixel({gridIndex:0},pixel)){hideTooltip(distributionTooltip);return}
+    const option=distributionChart.getOption();const coordinate=distributionChart.convertFromPixel({xAxisIndex:0,yAxisIndex:0},pixel);let nearest=null;
+    option.series.forEach(series=>{if(!series.data?.length)return;const data=series.data.map(item=>item?.value??item);const dataIndex=closestLogIndex(data,coordinate[1]);const value=data[dataIndex];if(!Array.isArray(value)||value.length<2)return;const point=distributionChart.convertToPixel({xAxisIndex:0,yAxisIndex:0},value);const distance=Math.hypot(point[0]-pixel[0],point[1]-pixel[1]);if(!nearest||distance<nearest.distance)nearest={name:series.name,value,distance}});
+    if(nearest&&nearest.distance<=18)showTooltip(distributionElement,distributionTooltip,event.offsetX,event.offsetY,nearest.name,`资金 $${money(nearest.value[1])} · 相对密度 ${(Number(nearest.value[0])/distributionDensityMax*100).toFixed(1)}%`);else hideTooltip(distributionTooltip);
+  });
+  distributionChart.getZr().on('globalout',()=>hideTooltip(distributionTooltip));
 
   distributionChart.on('brushEnd',event => {
     const area=event.areas?.[0];
