@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>策略模拟器 | 凯利公式与资金曲线诊断工具</title>
 
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f3f4f6">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="策略模拟">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="交易模拟器">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script>(function(){var theme='light';try{var saved=localStorage.getItem('onechart-theme');if(saved==='dark'||saved==='light')theme=saved;}catch(e){}document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;})();</script>
     <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
     <style>
         :root {
@@ -40,11 +41,10 @@
         input[type="range"] { width: 100%; cursor: pointer; }
 
         .btn-run {
-            background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; padding: 14px; border-radius: 8px;
-            font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-top: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            background: var(--bg-panel); color: var(--text-main); border: 1px solid var(--border-color); padding: 14px; border-radius: 0;
+            font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
-        .btn-run:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4); }
-        .btn-run:active { transform: translateY(0); }
+        .btn-run:hover, .btn-run:active { box-shadow: none; }
 
         .btn-link {
             background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
@@ -55,7 +55,7 @@
 
         /* ==================== 顶部诊断与逆向推算 ==================== */
         .dashboard-header { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 2px; }
-        .insight-box { background: rgba(255, 255, 255, 0.05); border-left: 4px solid; padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; transition: border-color 0.3s;}
+        .insight-box { background: rgba(255, 255, 255, 0.05); border-left: 1px solid; padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; transition: border-color 0.3s;}
         
         .reverse-calc-box { 
             background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; 
@@ -94,7 +94,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .detail-header { font-size: 1rem; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
         .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .detail-box { background: var(--bg-panel); padding: 12px 16px; border-radius: 8px; border-left: 3px solid; }
+        .detail-box { background: var(--bg-panel); padding: 12px 16px; border-radius: 8px; border-left: 1px solid; }
         .detail-box-title { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;}
         .detail-box-val { font-size: 1.2rem; font-weight: bold; font-family: monospace; margin-bottom: 4px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .detail-box-prob { font-size: 0.8rem; font-weight: 600; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-color);}
@@ -112,7 +112,7 @@
         .footer-info { width: 100%; max-width: 1800px; text-align: center; padding: 24px 0 10px 0; margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--border-color); letter-spacing: 1px; }
 
         /* =========================================
-            📱 移动端响应式布局适配 (核心补丁)
+            移动端响应式布局适配
            ========================================= */
         .mobile-toggle-btn { display: none; }
         .sidebar-overlay { display: none; }
@@ -133,9 +133,9 @@
             .mobile-toggle-btn {
                 display: flex; align-items: center; justify-content: center; gap: 6px;
                 position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-                z-index: 998; background: linear-gradient(135deg, #3b82f6, #2563eb);
-                color: #fff; border: none; padding: 14px 30px; border-radius: 30px;
-                font-size: 1rem; font-weight: bold; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+                z-index: 998; background: var(--text-main);
+                color: var(--bg-panel); border: 1px solid var(--border-color); padding: 14px 30px; border-radius: 0;
+                font-size: 1rem; font-weight: bold; box-shadow: none;
                 cursor: pointer; transition: transform 0.2s; white-space: nowrap;
                 border: 1px solid rgba(255,255,255,0.1);
             }
@@ -146,7 +146,7 @@
                 display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
                 background: rgba(15, 23, 42, 0.75); z-index: 999;
                 opacity: 0; visibility: hidden; transition: all 0.3s ease;
-                backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+                backdrop-filter: none; -webkit-backdrop-filter: none;
             }
             .sidebar-overlay.active { opacity: 1; visibility: visible; }
 
@@ -212,20 +212,204 @@
             .chart-wrapper, .dist-chart { height: 300px; }
         }
     </style>
+    <style>
+        :root {
+            --oc-layout-max: 1560px; --oc-layout-gutter: 24px;
+            --oc-ground: #f3f4f6; --oc-paper: #ffffff; --oc-panel: #fbfbfc; --oc-panel-muted: #f7f8f9;
+            --oc-ink: #13161a; --oc-text: #30363e; --oc-muted: #6e7783; --oc-quiet: #939aa4;
+            --oc-line: #e0e3e7; --oc-line-strong: #cfd4da; --oc-row-hover: #f7f8fa;
+            --oc-accent: #557da8; --oc-accent-fill: #e8eef4; --oc-risk: #c94742; --oc-gain: #14715c;
+            --oc-warm: #996421; --oc-on-solid: #ffffff; --color-analysis: #7257a5;
+            --bg-base: var(--oc-ground); --bg-panel: var(--oc-paper); --text-main: var(--oc-ink);
+            --text-muted: var(--oc-muted); --border-color: var(--oc-line);
+        }
+        html[data-theme="dark"] {
+            --oc-ground: #0f1216; --oc-paper: #15191e; --oc-panel: #181d23; --oc-panel-muted: #1b2027;
+            --oc-ink: #f0f2f5; --oc-text: #c9d0d8; --oc-muted: #8f99a5; --oc-quiet: #7e8894;
+            --oc-line: #282f38; --oc-line-strong: #39424d; --oc-row-hover: #1a2027;
+            --oc-accent: #8eacd2; --oc-accent-fill: #1d2a3a; --oc-risk: #e06a64; --oc-gain: #48b89d;
+            --oc-warm: #b99565; --oc-on-solid: #0f1216; --color-analysis: #b6a0dc;
+        }
+        * { box-sizing: border-box; }
+        html { min-width: 0; background: var(--oc-ground); }
+        body { min-width: 0; min-height: 100vh; margin: 0; padding: 0 0 28px; display: block; background: var(--oc-ground); color: var(--oc-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif; }
+        ::selection { background: var(--oc-accent-fill); color: var(--oc-ink); }
+        button, input { font: inherit; }
+        button:focus-visible, input:focus-visible, a:focus-visible, [role="button"]:focus-visible { outline: 2px solid var(--oc-ink); outline-offset: 2px; }
+        .site-nav { height: 58px; border-bottom: 1px solid var(--oc-line-strong); background: var(--oc-paper); }
+        .oc-nav-inner, .page-head, .container, .footer-info { width: min(var(--oc-layout-max), calc(100% - 2 * var(--oc-layout-gutter))); margin-inline: auto; }
+        .oc-nav-inner { height: 100%; display: flex; align-items: center; }
+        .site-wordmark { display: flex; align-items: center; color: var(--oc-ink); font-size: 16px; font-weight: 730; letter-spacing: -.035em; text-decoration: none; }
+        .site-wordmark::after { content: ""; width: 1px; height: 18px; margin-left: 22px; background: var(--oc-line-strong); }
+        .site-nav-links { height: 100%; min-width: 0; margin-left: 22px; display: flex; align-items: center; gap: 26px; overflow-x: auto; scrollbar-width: none; }
+        .site-nav-links::-webkit-scrollbar { display: none; }
+        .site-link { position: relative; height: 100%; flex: 0 0 auto; display: flex; align-items: center; color: var(--oc-muted); font-size: 12px; font-weight: 500; text-decoration: none; }
+        .site-link:hover { color: var(--oc-ink); }
+        .site-link.active { color: var(--oc-ink); font-weight: 650; }
+        .site-link.active::after { content: ""; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--oc-ink); }
+        .theme-toggle { height: 30px; margin-left: auto; padding: 0 9px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--oc-line-strong); border-radius: 0; background: transparent; color: var(--oc-muted); font-size: 10px; font-weight: 620; white-space: nowrap; cursor: pointer; }
+        .theme-toggle:hover { border-color: var(--oc-ink); color: var(--oc-ink); }
+        .theme-icon { width: 13px; height: 13px; }
+        .theme-icon-light { display: none; }
+        html[data-theme="dark"] .theme-icon-dark { display: none; }
+        html[data-theme="dark"] .theme-icon-light { display: block; }
+        .page-head { min-height: 82px; padding: 20px 0 17px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+        .page-title h1 { margin: 0; color: var(--oc-ink); font-size: 28px; line-height: 1.15; font-weight: 710; letter-spacing: -.04em; }
+        .page-title p { margin: 7px 0 0; color: var(--oc-muted); font-size: 11px; }
+        .page-note { max-width: 520px; margin: 0; color: var(--oc-quiet); font-size: 10px; line-height: 1.5; text-align: right; }
+        .container { max-width: none; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0; align-items: start; border-top: 1px solid var(--oc-ink); border-bottom: 1px solid var(--oc-line-strong); background: var(--oc-paper); }
+        .sidebar { min-width: 0; padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 16px; border: 0; border-right: 1px solid var(--oc-line-strong); border-radius: 0; background: var(--oc-panel); }
+        .sidebar h2 { margin: 0; padding: 0 0 13px; border-bottom: 1px solid var(--oc-line); color: var(--oc-ink); font-size: 14px; font-weight: 680; }
+        .panel-kicker { display: block; margin-top: 3px; color: var(--oc-quiet); font-size: 9px; font-weight: 500; }
+        .mode-switch { display: grid; grid-template-columns: 1fr 1fr; margin: 0; padding: 0; border: 1px solid var(--oc-line-strong); border-radius: 0; background: transparent; }
+        .mode-option { min-width: 0; padding: 8px 6px; border-radius: 0; color: var(--oc-muted); font-size: 11px; text-align: center; cursor: pointer; transition: color .16s ease, background .16s ease; }
+        .mode-option + .mode-option { border-left: 1px solid var(--oc-line); }
+        .mode-option:hover { color: var(--oc-ink); }
+        .mode-option.active { background: var(--oc-ink); color: var(--oc-paper); font-weight: 650; box-shadow: none; }
+        .sim-tabs-container { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: -7px 0 0; border-bottom: 1px solid var(--oc-line); }
+        .sub-tab { padding: 8px 4px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--oc-muted); font-size: 10px; cursor: pointer; }
+        .sub-tab.active { border-color: var(--oc-ink); background: transparent; color: var(--oc-ink); font-weight: 650; }
+        .sub-tab:hover:not(.active) { background: transparent; color: var(--oc-ink); }
+        .control-group { gap: 7px; }
+        .control-header { gap: 12px; color: var(--oc-muted); font-size: 10.5px; line-height: 1.35; }
+        .control-header span:first-child { color: var(--oc-muted) !important; }
+        .val-display { flex: 0 0 auto; color: var(--oc-ink); font-family: inherit; font-size: 11px; font-variant-numeric: tabular-nums; }
+        input[type="range"] { width: 100%; height: 16px; margin: 0; accent-color: var(--oc-ink); cursor: pointer; }
+        .btn-run { min-height: 38px; margin-top: 2px; padding: 9px 12px; border: 1px solid var(--oc-ink); border-radius: 0; background: var(--oc-ink); color: var(--oc-paper); box-shadow: none; font-size: 11px; font-weight: 650; transition: none; }
+        .btn-run:hover, .btn-run:active { transform: none; box-shadow: none; }
+        .main-content { min-width: 0; gap: 0; background: var(--oc-paper); }
+        .dashboard-header { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.35fr); gap: 0; margin: 0; border-bottom: 1px solid var(--oc-line-strong); }
+        .insight-box, .reverse-calc-box { min-width: 0; min-height: 126px; padding: 15px 18px; border: 0; border-radius: 0; background: var(--oc-paper); color: var(--oc-muted); font-size: 11px; line-height: 1.55; }
+        .insight-box { border-left: 1px solid var(--oc-accent); border-right: 1px solid var(--oc-line); }
+        .reverse-calc-box { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .62fr); gap: 18px; align-items: stretch; }
+        .reverse-calc-title { margin: 0 0 8px; padding: 0 0 7px; border-bottom: 1px solid var(--oc-line); color: var(--oc-ink); font-size: 11px; font-weight: 650; }
+        #reverseCalcResult { color: var(--oc-muted) !important; }
+        #recBoxWrapper > div { min-width: 0 !important; padding: 10px 12px !important; align-items: flex-start !important; border: 1px solid var(--oc-line-strong) !important; border-radius: 0 !important; background: var(--oc-panel) !important; }
+        #recBoxWrapper span { color: var(--oc-ink) !important; }
+        #recBoxWrapper button, #recBoxWrapper a { min-height: 28px; border-radius: 0 !important; background: var(--oc-paper) !important; box-shadow: none !important; }
+        .stats-grid { display: grid; gap: 0; border-bottom: 1px solid var(--oc-line-strong); background: var(--oc-panel); }
+        .stat-card { min-width: 0; min-height: 112px; padding: 13px 14px; border: 0; border-right: 1px solid var(--oc-line); border-radius: 0; background: var(--oc-panel); cursor: pointer; overflow: hidden; transition: background .16s ease; }
+        .stat-card:last-child { border-right: 0; }
+        .stat-card::before { top: auto; bottom: 0; height: 2px; }
+        .stat-card:hover { transform: none; background: var(--oc-row-hover); box-shadow: none; }
+        .stat-card.active { border-color: var(--oc-line); background: var(--oc-accent-fill); box-shadow: none; }
+        .stat-title { margin-bottom: 10px; color: var(--oc-ink); font-size: 11px; font-weight: 650; }
+        .stat-row { margin-bottom: 5px; color: var(--oc-muted); font-size: 10px; gap: 8px; }
+        .stat-val { color: var(--oc-ink); font-family: inherit; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+        .stat-val.danger { color: var(--oc-risk); }
+        .detail-panel { margin: 0; padding: 16px 18px 18px; border: 0; border-bottom: 1px solid var(--oc-line-strong); border-radius: 0; background: var(--oc-paper); animation: none; }
+        .detail-header { margin-bottom: 12px; color: var(--oc-ink); font-size: 12px; }
+        .detail-grid { gap: 0; border: 1px solid var(--oc-line); }
+        .detail-box { min-width: 0; padding: 12px 14px; border: 0; border-left: 1px solid; border-radius: 0; background: var(--oc-panel); }
+        .detail-box + .detail-box { border-top: 0; border-left-width: 1px; }
+        .detail-box-title { color: var(--oc-muted); font-size: 9px; text-transform: none; }
+        .detail-box-val { color: var(--oc-ink); font-family: inherit; font-size: 17px; font-variant-numeric: tabular-nums; }
+        .detail-box-prob { border-color: var(--oc-line); font-size: 10px; }
+        .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .chart-wrapper, .dist-chart { height: 520px; min-width: 0; padding: 42px 12px 10px; border: 0; border-radius: 0; background: var(--oc-paper); }
+        .chart-wrapper { border-right: 1px solid var(--oc-line-strong); }
+        .chart-label { position: absolute; top: 13px; left: 18px; z-index: 2; color: var(--oc-ink); font-size: 11px; font-weight: 650; }
+        .chart-hint { position: absolute; top: 14px; right: 18px; z-index: 2; color: var(--oc-quiet); font-size: 9px; }
+        .analysis-panel { margin: 0; padding: 14px 18px 18px; border: 0; border-top: 1px solid var(--oc-line-strong); border-radius: 0; background: var(--oc-paper); }
+        .analysis-header { margin-bottom: 10px; color: var(--oc-ink); font-size: 11px; }
+        .analysis-content { gap: 0; border: 1px solid var(--oc-line); }
+        .analysis-box { padding: 10px; border: 0; border-right: 1px solid var(--oc-line); border-radius: 0; background: var(--oc-panel); }
+        .analysis-box:last-child { border-right: 0; }
+        .analysis-box-title { color: var(--oc-muted); font-size: 9px; }
+        .analysis-box-val { color: var(--oc-ink); font-family: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
+        .footer-info { max-width: none; margin-top: 0; padding: 16px 0 0; border-top: 0; color: var(--oc-quiet); font-size: 10px; letter-spacing: 0; }
+        .footer-info a { color: var(--oc-muted) !important; text-decoration: none !important; }
+        .mobile-toggle-btn, .close-sidebar-btn, .sidebar-overlay { display: none; }
+        @media (max-width: 1287px) { :root { --oc-layout-gutter: 16px; } }
+        @media (max-width: 1180px) {
+            .container { grid-template-columns: 270px minmax(0, 1fr); }
+            .dashboard-header, .charts-row { grid-template-columns: 1fr; }
+            .insight-box { border-right: 0; border-bottom: 1px solid var(--oc-line); }
+            .chart-wrapper { border-right: 0; border-bottom: 1px solid var(--oc-line-strong); }
+            .chart-wrapper, .dist-chart { height: 460px; }
+        }
+        @media (max-width: 992px) {
+            body { padding: 0 0 20px; }
+            .page-head { align-items: flex-start; }
+            .container { display: block; }
+            .sidebar-overlay { position: fixed; inset: 0; z-index: 999; display: block; background: rgba(15, 18, 22, .68); opacity: 0; visibility: hidden; transition: opacity .2s ease; }
+            .sidebar-overlay.active { opacity: 1; visibility: visible; }
+            .sidebar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 1000; width: 100%; max-height: 88vh; padding: 22px 18px 32px; overflow-y: auto; border: 1px solid var(--oc-line-strong); border-bottom: 0; border-radius: 0; background: var(--oc-paper); transform: translateY(105%); transition: transform .25s ease; }
+            .sidebar.active { transform: translateY(0); }
+            .close-sidebar-btn { position: absolute; top: 14px; right: 14px; display: block; width: 28px; height: 28px; border: 1px solid var(--oc-line-strong); border-radius: 0; background: transparent; color: var(--oc-ink); cursor: pointer; }
+            .mobile-toggle-btn { position: sticky; top: 8px; right: auto; bottom: auto; left: auto; z-index: 998; width: max-content; min-height: 36px; margin: 0 14px 8px auto; padding: 8px 13px; align-items: center; border: 1px solid var(--oc-ink); border-radius: 0; background: var(--oc-ink); color: var(--oc-paper); box-shadow: none; font-size: 11px; font-weight: 650; transform: none; }
+            .mobile-toggle-btn:active { transform: none; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .stat-card:nth-child(2n) { border-right: 0; }
+            .stat-card { border-bottom: 1px solid var(--oc-line); }
+            .reverse-calc-box { grid-template-columns: 1fr; }
+            .insight-box, .reverse-calc-box { min-height: 0; cursor: pointer; padding-bottom: 28px; }
+            .insight-box::after, .reverse-calc-box::after { bottom: 8px; color: var(--oc-quiet); }
+            .detail-grid { grid-template-columns: 1fr; }
+            .detail-box + .detail-box { border-top: 1px solid var(--oc-line); }
+            .analysis-content { flex-direction: column; }
+            .analysis-box { border-right: 0; border-bottom: 1px solid var(--oc-line); }
+            .analysis-box:last-child { border-bottom: 0; }
+        }
+        @media (max-width: 640px) {
+            :root { --oc-layout-gutter: 14px; }
+            .site-nav { height: auto; min-height: 56px; }
+            .oc-nav-inner { min-height: 56px; padding-top: 10px; align-items: flex-start; flex-direction: column; gap: 5px; position: relative; }
+            .site-wordmark::after { display: none; }
+            .site-nav-links { width: 100%; height: 36px; margin-left: 0; gap: 20px; }
+            .site-link { height: 36px; }
+            .theme-toggle { position: absolute; top: 10px; right: 0; }
+            .page-head { min-height: 0; padding: 16px 0 14px; flex-direction: column; gap: 7px; }
+            .page-title h1 { font-size: 23px; }
+            .page-title p { font-size: 9px; }
+            .page-note { display: none; }
+            .dashboard-header { display: flex; flex-direction: column; }
+            .stats-grid { grid-template-columns: 1fr !important; }
+            .stat-card { border-right: 0; }
+            .chart-wrapper, .dist-chart { height: 360px; padding: 38px 6px 8px; }
+            .chart-label { top: 11px; left: 14px; }
+            .chart-hint { top: 12px; right: 14px; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+    </style>
 </head>
 <body>
+<!-- THESIS: A strategy risk bench where parameters, diagnosis, comparison, and probability remain visible in one continuous instrument; it refuses the old terminal-like card wall. OWN-WORLD: OneChart neutral ground, paper work surfaces, square controls, hairline rules, and color reserved for strategy and risk. STORY: Set assumptions, verify expectancy, compare risk fractions, then inspect path and distribution evidence. FIRST VIEWPORT: Unified navigation and page title above a fixed parameter rail, a diagnosis band, a horizontal strategy rail, and paired analytical charts. FORM: Grounded candidate 5, strategy comparison rail, seed 11dbfb38. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md. -->
+<nav class="site-nav" aria-label="OneChart 导航">
+    <div class="oc-nav-inner">
+        <a class="site-wordmark" href="https://onechart.top/">OneChart</a>
+        <div class="site-nav-links">
+            <a class="site-link" href="https://onechart.top/">板块资金雷达</a>
+            <a class="site-link" href="https://onechart.top/macro/">宏观择时</a>
+            <a class="site-link" href="https://bs.onechart.top/">仓位计算器</a>
+            <a class="site-link active" aria-current="page" href="./index.html">交易模拟器</a>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="切换到深色模式">
+            <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.2 15.7A8.5 8.5 0 0 1 8.3 3.8 8.5 8.5 0 1 0 20.2 15.7Z"/></svg>
+            <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4V2m0 20v-2M4 12H2m20 0h-2M6.3 6.3 4.9 4.9m14.2 14.2-1.4-1.4M17.7 6.3l1.4-1.4M4.9 19.1l1.4-1.4M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/></svg>
+            <span class="theme-label">深色</span>
+        </button>
+    </div>
+</nav>
+<header class="page-head">
+    <div class="page-title">
+        <h1>交易模拟器</h1>
+        <p>凯利公式与蒙特卡洛资金曲线诊断</p>
+    </div>
+    <p class="page-note">模拟结果用于理解路径、回撤和概率分布，不构成收益预测或投资建议。</p>
+</header>
 
 <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-<button class="mobile-toggle-btn" onclick="toggleSidebar()">⚙️ 展开参数面板</button>
+<button class="mobile-toggle-btn" onclick="toggleSidebar()">调整参数</button>
 
 <div class="container">
     <aside class="sidebar">
-        <button class="close-sidebar-btn" onclick="toggleSidebar()">✕</button>
-        <h2>🎲 凯利-蒙特卡洛模拟器</h2>
-        
-        <div class="mode-switch">
-            <div class="mode-option active" onclick="switchMode('sim')">🚀 理论模拟模式</div>
-            <div class="mode-option" onclick="switchMode('trade')">💼 真实交易模式</div>
+        <button class="close-sidebar-btn" onclick="toggleSidebar()" aria-label="关闭参数面板">×</button>
+        <h2>模拟参数</h2>
+
+        <div class="mode-switch" aria-label="模拟模式">
+            <button type="button" class="mode-option active" onclick="switchMode('sim')">理论模拟</button>
+            <button type="button" class="mode-option" onclick="switchMode('trade')">真实交易</button>
         </div>
 
         <div class="sim-tabs-container" id="simSubTabs">
@@ -246,24 +430,24 @@
             <input type="range" id="sliderN" min="50" max="500" step="10" value="100">
         </div>
         <div class="control-group">
-            <div class="control-header"><span style="color: #3b82f6;">🌍 平行宇宙数量</span><span class="val-display" id="valRuns">1000</span></div>
+            <div class="control-header"><span>平行样本数量</span><span class="val-display" id="valRuns">1000</span></div>
             <input type="range" id="sliderRuns" min="10" max="2000" step="10" value="1000">
         </div>
         
         <div class="control-group">
-            <div class="control-header"><span style="color: #a78bfa;">🎯 目标年化收益 (中位数)</span><span class="val-display" id="valTargetRet">50%</span></div>
+            <div class="control-header"><span>目标年化收益（中位数）</span><span class="val-display" id="valTargetRet">50%</span></div>
             <input type="range" id="sliderTargetRet" min="0" max="55" step="1" value="30">
         </div>
         <div class="control-group">
-            <div class="control-header"><span style="color: #f43f5e;">🛡️ 容忍最大回撤 (劣势20%)</span><span class="val-display" id="valTargetDD">20%</span></div>
+            <div class="control-header"><span>容忍最大回撤（劣势20%）</span><span class="val-display" id="valTargetDD">20%</span></div>
             <input type="range" id="sliderTargetDD" min="5" max="60" step="1" value="20">
         </div>
         <div class="control-group">
-            <div class="control-header"><span style="color: #10b981;">📅 年均交易笔数</span><span class="val-display" id="valAnnualTrades">50</span></div>
+            <div class="control-header"><span>年均交易笔数</span><span class="val-display" id="valAnnualTrades">50</span></div>
             <input type="range" id="sliderAnnualTrades" min="25" max="200" step="1" value="50">
         </div>
 
-        <button class="btn-run" onclick="forceReShuffle()">⚡ 执行重新洗牌</button>
+        <button class="btn-run" onclick="forceReShuffle()">重新生成模拟</button>
     </aside>
 
     <main class="main-content">
@@ -272,7 +456,7 @@
             
             <div class="reverse-calc-box" onclick="if(window.innerWidth<=992) this.classList.toggle('mobile-expanded')">
                 <div class="rc-left">
-                    <div class="reverse-calc-title">🎯 逆向推算单笔风险 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(基于收益/回撤目标与年均笔数)</span></div>
+                    <div class="reverse-calc-title">逆向推算单笔风险 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">（基于收益、回撤目标与年均笔数）</span></div>
                     <div id="reverseCalcResult" style="font-size: 0.8rem; line-height: 1.6; color: var(--text-muted);"></div>
                 </div>
                 <div id="recBoxWrapper" style="display: flex; flex-direction: column;"></div>
@@ -285,17 +469,17 @@
             <div class="detail-header"><span id="detailTitle">策略区间分布分析</span></div>
             <div class="detail-grid">
                 <div class="detail-box" style="border-color: #f43f5e;">
-                    <div class="detail-box-title">📉 谷底深渊 (绝对最低点)</div>
+                    <div class="detail-box-title">谷底深渊（绝对最低点）</div>
                     <div class="detail-box-val" id="dtMinVal" title="">$0</div>
                     <div class="detail-box-prob">落入此附近概率: <span id="dtMinProb">-</span></div>
                 </div>
                 <div class="detail-box" style="border-color: #3b82f6;">
-                    <div class="detail-box-title">🎯 普通人宿命 (中位数)</div>
+                    <div class="detail-box-title">普通人宿命（中位数）</div>
                     <div class="detail-box-val" id="dtMedVal" title="">$0</div>
                     <div class="detail-box-prob">落入此附近概率: <span id="dtMedProb">-</span></div>
                 </div>
                 <div class="detail-box" style="border-color: #10b981;">
-                    <div class="detail-box-title">🚀 幸存者巅峰 (绝对最高点)</div>
+                    <div class="detail-box-title">幸存者巅峰（绝对最高点）</div>
                     <div class="detail-box-val" id="dtMaxVal" title="">$0</div>
                     <div class="detail-box-prob">落入此附近概率: <span id="dtMaxProb">-</span></div>
                 </div>
@@ -303,12 +487,18 @@
         </div>
 
         <div class="charts-row">
-            <div class="chart-wrapper"><div id="mcChart" style="width: 100%; height: 100%;"></div></div>
-            <div class="dist-chart"><div id="distChart" style="width: 100%; height: 100%;"></div></div>
+            <section class="chart-wrapper" aria-label="资金曲线">
+                <div class="chart-label">资金路径</div><div class="chart-hint">单击锁定曲线 · 双击切换尺度</div>
+                <div id="mcChart" style="width: 100%; height: 100%;"></div>
+            </section>
+            <section class="dist-chart" aria-label="结果分布">
+                <div class="chart-label">结果分布</div><div class="chart-hint">拖动框选资金区间</div>
+                <div id="distChart" style="width: 100%; height: 100%;"></div>
+            </section>
         </div>
         
         <div class="analysis-panel" id="customAnalysis" style="display: none;">
-            <div class="analysis-header"><span>🟣 自定义概率分析</span><span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">(您已框选如下价格区间)</span></div>
+            <div class="analysis-header"><span>自定义概率分析</span><span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted);">（已框选以下资金区间）</span></div>
             <div class="analysis-content">
                 <div class="analysis-box">
                     <div class="analysis-box-title">区间最高价</div>
@@ -329,8 +519,31 @@
 </div>
 
 <div class="footer-info">
-    制作者：B站/公众号 <a href="https://b23.tv/KYfLfcH" target="_blank" style="color: #60a5fa; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#60a5fa'">知行图表交易</a>
+    制作者：B站 / 公众号 <a href="https://b23.tv/KYfLfcH" target="_blank" rel="noopener">知行图表交易</a>
 </div>
+
+<script>
+(function(){
+    function syncThemeControl(){
+        var dark=document.documentElement.dataset.theme==='dark';
+        var button=document.getElementById('themeToggle');
+        var label=button&&button.querySelector('.theme-label');
+        if(label) label.textContent=dark?'浅色':'深色';
+        if(button){button.setAttribute('aria-label',dark?'切换到浅色模式':'切换到深色模式');button.setAttribute('aria-pressed',dark?'true':'false');}
+        var meta=document.querySelector('meta[name="theme-color"]');
+        if(meta) meta.setAttribute('content',dark?'#0f1216':'#f3f4f6');
+    }
+    syncThemeControl();
+    document.getElementById('themeToggle').addEventListener('click',function(){
+        var next=document.documentElement.dataset.theme==='dark'?'light':'dark';
+        document.documentElement.dataset.theme=next;
+        document.documentElement.style.colorScheme=next;
+        try{localStorage.setItem('onechart-theme',next);}catch(e){}
+        syncThemeControl();
+        window.dispatchEvent(new CustomEvent('onechart-theme-change',{detail:{theme:next}}));
+    });
+})();
+</script>
 
 <script>
     const chart = echarts.init(document.getElementById('mcChart'));
@@ -396,21 +609,83 @@
         }
     }
 
+    const KELLY_SYNC_VERSION = 1;
+    const KELLY_SYNC_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+    const KELLY_SYNC_MAX_AGE_MS = KELLY_SYNC_MAX_AGE_SECONDS * 1000;
+
+    function getKellyCookieDomain() {
+        const override = window.__ONECHART_KELLY_COOKIE_DOMAIN__;
+        return typeof override === 'string' && override.trim() ? override.trim() : '.onechart.top';
+    }
+
+    function getKellyCookieName(type) {
+        return `onechart_kelly_${type}_v${KELLY_SYNC_VERSION}`;
+    }
+
+    function isValidKellyPayload(data, type) {
+        if (!data || data.v !== KELLY_SYNC_VERSION || data.type !== type) return false;
+        const { full, half, timestamp } = data;
+        const now = Date.now();
+        return Number.isFinite(full) && Number.isFinite(half) && Number.isFinite(timestamp)
+            && full >= 0 && full <= 100 && half >= 0 && half <= full
+            && timestamp >= now - KELLY_SYNC_MAX_AGE_MS && timestamp <= now + 5 * 60 * 1000;
+    }
+
+    function safeSetKellyLocal(type, data) {
+        try {
+            localStorage.setItem('zxchart_kelly_' + type, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function readKellyCookie(type) {
+        try {
+            const prefix = `${getKellyCookieName(type)}=`;
+            const entry = document.cookie.split(';').map(item => item.trim()).find(item => item.startsWith(prefix));
+            if (!entry) return null;
+            const data = JSON.parse(decodeURIComponent(entry.slice(prefix.length)));
+            return isValidKellyPayload(data, type) ? data : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function writeKellyCookie(type, data) {
+        try {
+            const encoded = encodeURIComponent(JSON.stringify(data));
+            document.cookie = `${getKellyCookieName(type)}=${encoded}; Max-Age=${KELLY_SYNC_MAX_AGE_SECONDS}; Path=/; Domain=${getKellyCookieDomain()}; SameSite=Lax; Secure`;
+            const saved = readKellyCookie(type);
+            return Boolean(saved && saved.timestamp === data.timestamp);
+        } catch (error) {
+            return false;
+        }
+    }
+
     function applyKellyToCalc(type, full, half, btn, event) {
-        if(event) event.stopPropagation(); 
-        const data = { full: full * 100, half: half * 100, timestamp: Date.now() };
-        localStorage.setItem('zxchart_kelly_' + type, JSON.stringify(data));
-        
+        if (event) event.stopPropagation();
+        const data = {
+            v: KELLY_SYNC_VERSION,
+            type,
+            full: full * 100,
+            half: half * 100,
+            timestamp: Date.now()
+        };
+        if (!isValidKellyPayload(data, type)) return;
+        safeSetKellyLocal(type, data);
+        const cookieSynced = writeKellyCookie(type, data);
+
         const originalText = btn.innerText;
         const originalBg = btn.style.background;
         const originalColor = btn.style.color;
         const originalBorder = btn.style.borderColor;
-        
-        btn.innerText = '✅ 已同步';
-        btn.style.background = 'rgba(16, 185, 129, 0.2)';
-        btn.style.color = '#10b981';
-        btn.style.borderColor = 'rgba(16, 185, 129, 0.5)';
-        
+
+        btn.innerText = cookieSynced ? '已同步' : '同步受限';
+        btn.style.background = cookieSynced ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.14)';
+        btn.style.color = cookieSynced ? '#10b981' : '#f59e0b';
+        btn.style.borderColor = cookieSynced ? 'rgba(16, 185, 129, 0.5)' : 'rgba(245, 158, 11, 0.45)';
+
         setTimeout(() => {
             btn.innerText = originalText;
             btn.style.background = originalBg;
@@ -690,8 +965,20 @@
         return { x: xVals, y: density };
     }
 
+    function getChartTheme() {
+        const dark = document.documentElement.dataset.theme === 'dark';
+        return dark ? {
+            ink: '#f0f2f5', text: '#c9d0d8', muted: '#8f99a5', line: '#39424d', minorLine: '#232a32',
+            tooltipBg: '#15191e', tooltipBorder: '#39424d', risk: '#e06a64', gain: '#48b89d', warm: '#b99565'
+        } : {
+            ink: '#13161a', text: '#30363e', muted: '#6e7783', line: '#d9dee4', minorLine: '#eceff2',
+            tooltipBg: '#ffffff', tooltipBorder: '#cfd4da', risk: '#c94742', gain: '#14715c', warm: '#996421'
+        };
+    }
+
     function renderDistribution() {
         if (Object.keys(globalAggregates).length === 0) return;
+        const chartTheme = getChartTheme();
         const strategies = Object.keys(currentMeta);
         const isHighlight = currentActiveCard !== null;
         const highlightedStrategies = isHighlight ? [currentActiveCard] : strategies;
@@ -747,11 +1034,11 @@
             if (agg && agg.finalValues) {
                 const vals = [...agg.finalValues].sort((a,b)=>a-b);
                 markLines = [
-                    { name: '最低点', value: vals[0], color: '#ff6b6b' },
-                    { name: '后10%分位', value: vals[Math.floor(vals.length * 0.1)], color: '#ffa500' },
+                    { name: '最低点', value: vals[0], color: chartTheme.risk },
+                    { name: '后10%分位', value: vals[Math.floor(vals.length * 0.1)], color: chartTheme.warm },
                     { name: '中位数', value: agg.medianPath[agg.medianPath.length - 1], color: meta.color },
-                    { name: '前10%分位', value: vals[Math.floor(vals.length * 0.9)], color: '#4caf50' },
-                    { name: '最高点', value: vals[vals.length-1], color: '#ffffff' }
+                    { name: '前10%分位', value: vals[Math.floor(vals.length * 0.9)], color: chartTheme.gain },
+                    { name: '最高点', value: vals[vals.length-1], color: chartTheme.ink }
                 ].map(ann => ({
                     name: ann.name, yAxis: ann.value,
                     lineStyle: { color: ann.color, width: 2, type: 'dashed', cap: 'round' },
@@ -764,29 +1051,31 @@
 
         const option = {
             backgroundColor: 'transparent',
-            tooltip: { trigger: 'item', axisPointer: { type: 'shadow' } },
+            tooltip: { trigger: 'item', backgroundColor: chartTheme.tooltipBg, borderColor: chartTheme.tooltipBorder, textStyle: { color: chartTheme.text }, axisPointer: { type: 'shadow' } },
             grid: { left: '2%', right: '8%', top: '10%', bottom: '12%', containLabel: true },
             brush: { toolbox: ['clear'], yAxisIndex: 0, brushStyle: { borderWidth: 1, color: 'rgba(196, 181, 253, 0.2)', borderColor: 'rgba(196, 181, 253, 0.8)' } },
             xAxis: {
                 type: 'value', name: '概率密度 (相对 %)', nameLocation: 'middle', nameGap: 28,
                 max: maxKdeDensity,
-                axisLabel: { color: '#94a3b8', fontSize: 10, formatter: (val) => ((val / maxKdeDensity) * 100).toFixed(0) + '%' },
-                splitLine: { lineStyle: { color: '#334155' } }
+                axisLabel: { color: chartTheme.muted, fontSize: 10, formatter: (val) => ((val / maxKdeDensity) * 100).toFixed(0) + '%' },
+                splitLine: { lineStyle: { color: chartTheme.line } }
             },
             yAxis: {
                 type: 'log', logBase: 10, name: '最终资金 ($)', nameLocation: 'middle', nameGap: 45, min: yBounds.min, max: yBounds.max,
-                axisLabel: { 
-                    color: '#94a3b8', fontSize: 11, hideOverlap: false, 
+                nameTextStyle: { color: chartTheme.muted },
+                axisLabel: {
+                    color: chartTheme.muted, fontSize: 11, hideOverlap: false,
                     formatter: (value) => {
                         if (value === 100) return '{start|100}';
                         if (value === 10 || value === 1 || value === 0.1 || value === 0.01) return value.toString();
                         return toPowerOfTen(value);
                     },
-                    rich: { start: { color: '#fff', fontWeight: 'bold' } }
+                    rich: { start: { color: chartTheme.ink, fontWeight: 'bold' } }
                 },
-                splitLine: { lineStyle: { color: '#334155', type: 'dashed' }, show: true },
+                axisLine: { lineStyle: { color: chartTheme.line } },
+                splitLine: { lineStyle: { color: chartTheme.line, type: 'dashed' }, show: true },
                 minorTick: { show: true, splitNumber: 5 },
-                minorSplitLine: { show: true, lineStyle: { color: '#1e293b', type: 'dashed', width: 1 } },
+                minorSplitLine: { show: true, lineStyle: { color: chartTheme.minorLine, type: 'dashed', width: 1 } },
                 interval: 1
             },
             series: series
@@ -825,6 +1114,7 @@
     });
 
     function renderChartSeries() {
+        const chartTheme = getChartTheme();
         let series = [];
         const targetedKey = currentActiveCard;
         const targetedMeta = targetedKey ? currentMeta[targetedKey] : null;
@@ -862,11 +1152,11 @@
             } 
             else if (targetedKey === key) {
                 let bounds = [
-                    { id: `max_${key}`, name: '极限最高边界', data: agg.maxPath, color: '#ffffff', type: 'dashed', w: 2, op: 0.9, lbl: '极限最高' },
+                    { id: `max_${key}`, name: '极限最高边界', data: agg.maxPath, color: chartTheme.ink, type: 'dashed', w: 2, op: 0.9, lbl: '极限最高' },
                     { id: `p90_${key}`, name: '前10%概率上限', data: agg.p90Path, color: meta.color, type: 'dotted', w: 2, op: 0.8, lbl: '前10%' },
                     { id: `medTarget_${key}`, name: '中位数基准', data: agg.medianPath, color: meta.color, type: 'solid', w: 5, op: 1, lbl: '中位数' },
                     { id: `p10_${key}`, name: '后10%概率下限', data: agg.p10Path, color: meta.color, type: 'dotted', w: 2, op: 0.8, lbl: '后10%' },
-                    { id: `min_${key}`, name: '极限最低边界', data: agg.minPath, color: '#ff4d4f', type: 'dashed', w: 2, op: 0.9, lbl: '极限最低' }
+                    { id: `min_${key}`, name: '极限最低边界', data: agg.minPath, color: chartTheme.risk, type: 'dashed', w: 2, op: 0.9, lbl: '极限最低' }
                 ];
 
                 bounds.forEach(b => {
@@ -877,7 +1167,6 @@
                         endLabel: { show: isolatedSeriesId === null || isolatedSeriesId === b.id, formatter: b.lbl, color: b.color, fontSize: 11 },
                         z: isolatedSeriesId === b.id ? 20 : 10
                     };
-                    if(b.name === '中位数基准') { s.lineStyle.shadowColor = meta.color; s.lineStyle.shadowBlur = 10; }
                     series.push(s);
                 });
 
@@ -904,8 +1193,8 @@
             name: '起始线标记', type: 'line', silent: true, 
             markLine: {
                 silent: true, symbol: 'none', data: [{ yAxis: 100 }],
-                lineStyle: { color: 'rgba(255, 255, 255, 0.4)', type: 'solid', width: 1 },
-                label: { show: true, position: 'insideStartBottom', formatter: '起始资金 ($100)', color: '#fff', fontSize: 10 }
+                lineStyle: { color: chartTheme.line, type: 'solid', width: 1 },
+                label: { show: true, position: 'insideStartBottom', formatter: '起始资金 ($100)', color: chartTheme.ink, fontSize: 10 }
             }
         });
 
@@ -915,26 +1204,26 @@
             backgroundColor: 'transparent', 
             tooltip: { 
                 trigger: 'axis', 
-                backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: '#334155', textStyle: { color: '#f8fafc' },
+                backgroundColor: chartTheme.tooltipBg, borderColor: chartTheme.tooltipBorder, textStyle: { color: chartTheme.text },
                 formatter: function (params) {
                     let html = `<div style="font-weight:bold; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:6px;">第 ${params[0].axisValue} 次交易 <span style="font-weight:normal; font-size:0.75rem; color:#94a3b8; float:right;">(单击任意曲线可锁定数据)</span></div>`;
                     
                     if (isolatedSeriesId !== null) {
                         let p = params.find(item => item.seriesId === isolatedSeriesId);
                         if (p) {
-                            let name = p.seriesName === 'bg_sample' ? '🔍 追踪单次模拟随机轨迹' : p.seriesName;
+                            let name = p.seriesName === 'bg_sample' ? '追踪单次模拟随机轨迹' : p.seriesName;
                             let metrics = lineMetricsMap[p.seriesId] || { mdd: '-', avgRet: '-' };
                             html += `<div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:4px; font-size: 0.95rem;">
                                         <span><span style="color:${p.color};">●</span> ${name}</span>
                                         <span style="font-family:monospace;">$${formatMoneyExt(p.value)}</span>
                                      </div>
                                      <div style="background: rgba(0,0,0,0.2); border-radius: 6px; padding: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.05);">
-                                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">🎯 该独立曲线全周期表现追踪：</div>
+                                        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">该独立曲线全周期表现：</div>
                                         <div style="display:flex; justify-content:space-between; margin-bottom: 4px; font-size:0.85rem;">
-                                            <span>📉 绝对最大回撤:</span> <span style="color:#f43f5e; font-family:monospace;">${metrics.mdd}</span>
+                                            <span>绝对最大回撤:</span> <span style="color:#f43f5e; font-family:monospace;">${metrics.mdd}</span>
                                         </div>
                                         <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                                            <span>🚀 平均每百笔收益:</span> <span style="color:#10b981; font-family:monospace;">${metrics.avgRet}</span>
+                                            <span>平均每百笔收益:</span> <span style="color:#10b981; font-family:monospace;">${metrics.avgRet}</span>
                                         </div>
                                      </div>`;
                             return html;
@@ -987,21 +1276,22 @@
                 }
             },
             grid: { left: '1%', right: '8%', bottom: '6%', top: '30px', containLabel: true },
-            xAxis: { type: 'category', data: xAxisData, axisLabel: { color: '#94a3b8' }, boundaryGap: false },
+            xAxis: { type: 'category', data: xAxisData, axisLabel: { color: chartTheme.muted }, axisLine: { lineStyle: { color: chartTheme.line } }, boundaryGap: false },
             yAxis: { 
-                type: 'log', logBase: 10, min: yBounds.min, max: yBounds.max, 
-                axisLabel: { 
-                    color: '#94a3b8', fontSize: 11, hideOverlap: false, 
+                type: 'log', logBase: 10, min: yBounds.min, max: yBounds.max,
+                axisLabel: {
+                    color: chartTheme.muted, fontSize: 11, hideOverlap: false,
                     formatter: (value) => {
                         if (value === 100) return '{start|100}';
                         if (value === 10 || value === 1 || value === 0.1 || value === 0.01) return value.toString();
                         return toPowerOfTen(value);
                     },
-                    rich: { start: { color: '#fff', fontWeight: 'bold' } }
+                    rich: { start: { color: chartTheme.ink, fontWeight: 'bold' } }
                 },
-                splitLine: { lineStyle: { color: '#334155', type: 'dashed' }, show: true },
+                axisLine: { lineStyle: { color: chartTheme.line } },
+                splitLine: { lineStyle: { color: chartTheme.line, type: 'dashed' }, show: true },
                 minorTick: { show: true, splitNumber: 5 },
-                minorSplitLine: { show: true, lineStyle: { color: '#1e293b', type: 'dashed', width: 1 } },
+                minorSplitLine: { show: true, lineStyle: { color: chartTheme.minorLine, type: 'dashed', width: 1 } },
                 interval: 1 
             },
             series: series
@@ -1115,13 +1405,13 @@
             let recHalf = finalF / 2;
             
             document.getElementById('reverseCalcResult').innerHTML = `
-                <div style="color:var(--text-muted); margin-bottom:4px;"><b>⚙️ 双重约束推算结果：</b></div>
+                <div style="color:var(--text-muted); margin-bottom:4px;"><b>双重约束推算结果：</b></div>
                 ${constraints.join('<br>')}
             `;
 
             document.getElementById('recBoxWrapper').innerHTML = `
                 <div style="flex:1; padding: 10px 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 220px;">
-                    <div style="color: #10b981; font-weight: bold; font-size: 0.85rem; margin-bottom: 6px;">✅ 建议风险敞口</div>
+                    <div style="color: #10b981; font-weight: bold; font-size: 0.85rem; margin-bottom: 6px;">建议风险敞口</div>
                     <div style="display: flex; gap: 16px; align-items: baseline; margin-bottom: 10px;">
                         <span title="单笔最大风险" style="font-family: monospace; font-size: 0.95rem; color: #fff;">满: ${(recFull*100).toFixed(2)}%</span>
                         <span title="半风险测试仓" style="font-family: monospace; font-size: 0.8rem; color: #94a3b8;">半: ${(recHalf*100).toFixed(2)}%</span>
@@ -1129,7 +1419,7 @@
                     <div style="display: flex; gap: 6px; width: 100%;">
                         <button onclick="applyKellyToCalc('B1', ${recFull}, ${recHalf}, this, event)" style="flex:1; padding: 6px 0; font-size: 0.75rem; font-weight:bold; border-radius: 4px; background: rgba(139, 92, 246, 0.1); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); cursor: pointer; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(139, 92, 246, 0.2)'" onmouseout="this.style.background='rgba(139, 92, 246, 0.1)'">应用到 B1</button>
                         <button onclick="applyKellyToCalc('B2', ${recFull}, ${recHalf}, this, event)" style="flex:1; padding: 6px 0; font-size: 0.75rem; font-weight:bold; border-radius: 4px; background: rgba(59, 130, 246, 0.1); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); cursor: pointer; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='rgba(59, 130, 246, 0.2)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.1)'">应用到 B2</button>
-                        <a href="https://zxchart.github.io/position-calculator/" target="_blank" onclick="event.stopPropagation()" style="flex:1; padding: 6px 0; font-size: 0.75rem; font-weight:bold; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer; text-decoration: none; text-align: center; box-sizing: border-box; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(16, 185, 129, 0.2)'" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'">计算器 ➔</a>
+                        <a href="https://bs.onechart.top/" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="flex:1; padding: 6px 0; font-size: 0.75rem; font-weight:bold; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer; text-decoration: none; text-align: center; box-sizing: border-box; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(16, 185, 129, 0.2)'" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'">仓位计算器</a>
                     </div>
                 </div>
             `;
@@ -1159,17 +1449,17 @@
         let evalText = "";
         let borderColor = "";
         if (expectancy <= 0) {
-            evalText = `<span style="color:#f43f5e">💀 <b>死亡螺旋：</b> 数学期望为负。大数定律会确保你必定破产，请立刻停止该策略！</span>`;
+            evalText = `<span style="color:#f43f5e"><b>死亡螺旋：</b> 数学期望为负。大数定律会确保你必定破产，请立刻停止该策略！</span>`;
             borderColor = "#f43f5e";
         } else {
             if (f_star < 0.1) {
-                evalText = `<span style="color:var(--text-main)">🐢 <b>微弱优势：</b> 具备正期望，但容错率极低。防范黑天鹅回撤。</span>`;
+                evalText = `<span style="color:var(--text-main)"><b>微弱优势：</b> 具备正期望，但容错率极低。防范黑天鹅回撤。</span>`;
                 borderColor = "var(--text-muted)";
             } else if (f_star < 0.3) {
-                evalText = `<span style="color:#0ea5e9">🔥 <b>黄金系统：</b> 极佳的优势区间！使用精细化微仓能让你获得平滑复利。</span>`;
+                evalText = `<span style="color:#0ea5e9"><b>黄金系统：</b> 极佳的优势区间！使用精细化微仓能让你获得平滑复利。</span>`;
                 borderColor = "#0ea5e9";
             } else {
-                evalText = `<span style="color:#3b82f6">💎 <b>梦幻系统 (或过度拟合)：</b> 理论优势极高。但也请警惕历史回测的“幸存者偏差”。</span>`;
+                evalText = `<span style="color:#3b82f6"><b>梦幻系统（或过度拟合）：</b> 理论优势极高。但也请警惕历史回测的“幸存者偏差”。</span>`;
                 borderColor = "#3b82f6";
             }
         }
@@ -1177,10 +1467,10 @@
         
         insightBox.innerHTML = `
             <div>
-                <strong>🩺 当前诊断：</strong>数学期望 <span style="font-family:monospace; font-size:1.1em; color:${expectancy > 0 ? '#10b981' : '#f43f5e'}">${expectancy > 0 ? '+' : ''}${expectancy.toFixed(3)} R</span>
+                <strong>当前诊断：</strong>数学期望 <span style="font-family:monospace; font-size:1.1em; color:${expectancy > 0 ? '#10b981' : '#f43f5e'}">${expectancy > 0 ? '+' : ''}${expectancy.toFixed(3)} R</span>
             </div>
             <div class="insight-detail" style="margin-top: 6px; padding-top: 6px; font-size: 0.8rem;">
-                <strong>📐 核心基石：</strong>用 <b>凯利公式</b> 寻找理论资金增长极限，用海量 <b>蒙特卡洛平行宇宙</b> 抹平短期运气暴露长期宿命。
+                <strong>核心基石：</strong>用 <b>凯利公式</b> 寻找理论资金增长极限，用海量 <b>蒙特卡洛平行宇宙</b> 抹平短期运气暴露长期宿命。
                 <div style="margin-top: 4px;">
                     ${evalText}
                 </div>
@@ -1356,12 +1646,18 @@
     });
     
     window.addEventListener('resize', () => { chart.resize(); distChart.resize(); });
-    
+    window.addEventListener('onechart-theme-change', () => {
+        renderChartSeries();
+        renderDistribution();
+        chart.resize();
+        distChart.resize();
+    });
+
     renderStatCards();
     setTimeout(runMonteCarlo, 100);
 
     // =========================================
-    // 🌐 注册 PWA Service Worker
+    // 注册 PWA Service Worker
     // =========================================
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

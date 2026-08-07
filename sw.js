@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trading-simu-v1';
+const CACHE_NAME = 'trading-simu-v2';
 
 // 需要预先缓存的核心文件
 const urlsToCache = [
