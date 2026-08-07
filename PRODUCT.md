@@ -30,7 +30,7 @@ web
 
 ## Capabilities and Constraints
 
-- 静态 PWA，无账户、后端、行情 API 或自动交易。
+- 静态 PWA，无账户、后端、行情 API 或自动交易；ECharts 作为本地版本化资产随应用缓存，离线启动不依赖 CDN。
 - Web Worker 执行逆向风险、蒙特卡洛路径、精确分位与 KDE；主线程只管理状态、交互和图表。
 - Worker 计算期临时持有连续路径矩阵，完成后只传输聚合 ViewModel；主线程不保存全路径。
 - 新任务可取消旧任务，结果按 `jobId` 原子提交；过期任务不得覆盖当前结果。

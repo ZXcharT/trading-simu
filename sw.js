@@ -1,15 +1,12 @@
 const CACHE_NAME = 'trading-simu-v3';
 const CORE = [
   './','./index.html','./styles.css','./manifest.json','./icons/icon-192.png','./icons/icon-512.png',
+  './vendor/echarts.min.js',
   './js/app.mjs','./js/charts.mjs','./js/engine.mjs','./js/random.mjs','./js/kelly-sync.mjs','./js/simulation.worker.mjs'
 ];
-const ECHARTS = 'https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js';
 
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE_NAME).then(async cache=>{
-    await cache.addAll(CORE);
-    try{await cache.add(ECHARTS)}catch(error){console.warn('ECharts CDN 未能预缓存',error)}
-  }));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(CORE)));
   self.skipWaiting();
 });
 self.addEventListener('activate',event=>{
