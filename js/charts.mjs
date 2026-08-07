@@ -22,6 +22,9 @@ function percentile(values, ratio) {
   const sorted = Float64Array.from(values).sort();
   return sorted[Math.floor(sorted.length * ratio)];
 }
+function compactLegend(colors,data){
+  return {show:true,top:1,type:'scroll',data,icon:'roundRect',itemWidth:12,itemHeight:3,itemGap:14,textStyle:{color:colors.muted,fontSize:10},pageIconSize:9,pageButtonItemGap:3,pageButtonGap:7,pageTextStyle:{color:colors.muted,fontSize:9}};
+}
 
 export function createCharts({ pathElement, distributionElement, onRange }) {
   const pathChart = echarts.init(pathElement);
@@ -58,7 +61,7 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
       animation:false,backgroundColor:'transparent',
       tooltip:{trigger:'item',backgroundColor:colors.paper,borderColor:colors.line,textStyle:{color:colors.text},formatter:item=>`${item.seriesName}<br>第 ${item.dataIndex} 笔 · $${money(item.value)}`},
       grid:{left:58,right:30,top:28,bottom:44},
-      legend:{show:true,top:0,data:legendData,textStyle:{color:colors.muted,fontSize:10},type:'scroll'},
+      legend:compactLegend(colors,legendData),
       xAxis:{type:'category',boundaryGap:false,data:Array.from({length:current.params.trades+1},(_,i)=>i),name:'交易次数',nameLocation:'middle',nameGap:28,axisLabel:{color:colors.muted},axisLine:{lineStyle:{color:colors.line}},splitLine:{show:false}},
       yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'资金',axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
       series
@@ -92,7 +95,7 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
       tooltip:{trigger:'item',backgroundColor:colors.paper,borderColor:colors.line,textStyle:{color:colors.text},formatter:p=>`${p.seriesName}<br>资金 $${money(p.value[1])}`},
       brush:{toolbox:['clear'],yAxisIndex:0,brushMode:'single',brushStyle:{borderWidth:1,borderColor:colors.ink,color:'rgba(85,125,168,.12)'}},
       grid:{left:68,right:30,top:28,bottom:44},
-      legend:{show:true,top:0,textStyle:{color:colors.muted,fontSize:10},type:'scroll'},
+      legend:compactLegend(colors,rows.map(row=>row.name)),
       xAxis:{type:'value',max:densityMax,name:'相对密度',nameLocation:'middle',nameGap:28,axisLabel:{color:colors.muted,formatter:value=>densityMax?`${(value/densityMax*100).toFixed(0)}%`:'0%'},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line}}},
       yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'最终资金',axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
       series
