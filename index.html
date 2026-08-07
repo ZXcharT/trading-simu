@@ -58,12 +58,12 @@
   <div class="result-column">
     <section class="decision-summary">
       <article class="expectancy-conclusion"><div class="summary-heading"><span class="eyebrow">单笔数学期望</span><strong id="expectancyResult">–</strong></div><dl><div><dt>盈亏平衡胜率</dt><dd id="breakEvenResult">–</dd></div><div><dt>高于盈亏平衡</dt><dd id="winEdgeResult">–</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">–</dd></div></dl></article>
-      <article class="risk-conclusion"><div class="summary-heading"><span class="eyebrow">建议单笔风险上限</span><strong id="recommendedRisk">–</strong></div><dl><div><dt>建议测试风险</dt><dd id="testRisk">–</dd></div><div><dt>主要风险约束</dt><dd id="limitingFactor">–</dd></div><div><dt>收益目标</dt><dd id="targetStatus">–</dd></div></dl></article>
+      <article class="risk-conclusion"><div class="summary-heading"><span class="eyebrow">单笔建议风险敞口</span><span class="full-risk" title="单笔最大风险"><small>满额</small><strong id="recommendedRisk">–</strong></span></div><dl><div><dt>半额测试</dt><dd id="testRisk">–</dd></div><div><dt>主要风险约束</dt><dd id="limitingFactor">–</dd></div><div><dt>收益目标</dt><dd id="targetStatus">–</dd></div></dl></article>
       <article class="handoff"><div class="summary-heading handoff-heading"><span class="eyebrow">应用到仓位计算器</span><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器</a></div><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">完成模拟后，可选择买点类型应用风险参数</p></article>
     </section>
 
     <section class="ladder-section">
-      <header class="section-head"><div><h2>风险档位</h2><p id="basisDescription">围绕建议风险上限比较不同档位</p></div><div class="basis-switch" role="group" aria-label="比较基准"><button class="active" type="button" data-basis="decision">建议风险</button><button type="button" data-basis="theory">凯利理论档</button></div></header>
+      <header class="section-head"><div><h2>风险档位</h2><p id="basisDescription">围绕满额风险敞口比较执行档位</p></div><div class="basis-switch" role="group" aria-label="比较基准"><button class="active" type="button" data-basis="decision">风险敞口</button><button type="button" data-basis="theory">凯利理论档</button></div></header>
       <div id="riskLadder" class="risk-ladder" aria-live="polite"></div>
       <button id="clearStrategy" class="text-button" type="button" hidden>返回全部档位比较</button>
     </section>

@@ -104,7 +104,7 @@ function renderResult(result){
   renderBasis(result);
 }
 function renderBasis(result){
-  const view=resultForBasis(result);renderLadder(view);renderDetails(null);charts.setResult(view);$('chartContext').textContent=state.viewBasis==='decision'?'比较建议风险档位':'比较凯利理论档';$('clearStrategy').hidden=true;$('scaleToggle').textContent='尺度：聚焦';
+  const view=resultForBasis(result);renderLadder(view);renderDetails(null);charts.setResult(view);$('chartContext').textContent=state.viewBasis==='decision'?'比较风险敞口档位':'比较凯利理论档';$('clearStrategy').hidden=true;$('scaleToggle').textContent='尺度：聚焦';
 }
 function renderLadder(result){
   const container=$('riskLadder');container.replaceChildren();
@@ -117,7 +117,7 @@ function renderLadder(result){
 function selectStrategy(id,result=state.lastGoodResult?resultForBasis(state.lastGoodResult):null){
   if(!result)return;
   charts.selectStrategy(id);const selectedId=charts.getState().selectedId;document.querySelectorAll('.risk-item').forEach(item=>item.classList.toggle('active',item.dataset.strategy===selectedId));$('clearStrategy').hidden=!selectedId;
-  const row=result.strategies.find(item=>item.id===selectedId)||null;$('chartContext').textContent=row?`正在分析：${row.name} · 自动显示样本路径`:(state.viewBasis==='decision'?'比较建议风险档位':'比较凯利理论档');renderDetails(row);
+  const row=result.strategies.find(item=>item.id===selectedId)||null;$('chartContext').textContent=row?`正在分析：${row.name} · 自动显示样本路径`:(state.viewBasis==='decision'?'比较风险敞口档位':'比较凯利理论档');renderDetails(row);
 }
 function renderDetails(row){const box=$('detailContent');if(!row){box.innerHTML='<p>选择一个风险档后查看最低样本、中位数和最高样本。</p>';return}box.innerHTML=`<article><span>最低样本结果</span><strong>${formatMoney(row.minPath[row.trades])}</strong></article><article><span>中位数结果</span><strong>${formatMoney(row.median[row.trades])}</strong></article><article><span>最高样本结果</span><strong>${formatMoney(row.maxPath[row.trades])}</strong></article>`}
 function renderRange(value){const box=$('rangeResult');if(!value){box.hidden=true;return}box.hidden=false;box.textContent=`资金区间 ${formatMoney(value.low)} 至 ${formatMoney(value.high)}，落入概率 ${formatPercent(value.probability,1)}`}
@@ -129,7 +129,7 @@ function syncTo(buyPoint){
   $('syncStatus').textContent=sync.ok?`已应用到${label} · ${time}`:`${label}应用受限，请打开仓位计算器确认`;
 }
 
-function setBasis(basis){if(state.viewBasis===basis)return;state.viewBasis=basis;document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕建议风险上限比较不同档位':'比较完整凯利理论档位（高级）';if(state.lastGoodResult)renderBasis(state.lastGoodResult)}
+function setBasis(basis){if(state.viewBasis===basis)return;state.viewBasis=basis;document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕满额风险敞口比较执行档位':'比较完整凯利理论档位（高级）';if(state.lastGoodResult)renderBasis(state.lastGoodResult)}
 function syncTheme(){const dark=document.documentElement.dataset.theme==='dark';$('themeLabel').textContent=dark?'浅色':'深色';$('themeToggle').setAttribute('aria-label',dark?'切换到浅色模式':'切换到深色模式');document.querySelector('meta[name=theme-color]').content=dark?'#0f1216':'#f3f4f6'}
 function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;document.documentElement.style.colorScheme=next;try{localStorage.setItem('onechart-theme',next)}catch{}syncTheme();charts.refreshTheme()}
 function toggleDrawer(open){$('parameterPanel').classList.toggle('active',open);$('drawerOverlay').classList.toggle('active',open)}
