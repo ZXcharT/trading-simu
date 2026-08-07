@@ -110,7 +110,7 @@ function renderLadder(result){
   const container=$('riskLadder');container.replaceChildren();
   for(const row of result.strategies){
     const button=document.createElement('button');button.type='button';button.className='risk-item';button.style.setProperty('--strategy-color',row.color);button.dataset.strategy=row.id;
-    button.innerHTML=`<strong>${row.name}</strong><div class="risk-primary"><span>单笔风险</span><b>${formatPercent(row.fraction*100,2)}</b></div><dl><div><dt>最终资金中位数</dt><dd>${formatMoney(row.median[row.trades])}</dd></div><div><dt>劣势回撤</dt><dd>${formatPercent(row.p80Drawdown,1)}</dd></div><div><dt>腰斩概率</dt><dd>${formatPercent(row.halveRate,1)}</dd></div><div><dt>接近归零概率</dt><dd>${formatPercent(row.ruinRate,1)}</dd></div></dl>`;
+    button.innerHTML=`<strong>${row.name}</strong><div class="risk-primary"><span>单笔风险</span><b>${formatPercent(row.fraction*100,2)}</b></div><dl><div><dt>最终资金中位数</dt><dd>${formatMoney(row.median[row.trades])}</dd></div><div><dt title="80%的模拟路径，最大回撤不超过此值；20%可能更差">80分位回撤</dt><dd>${formatPercent(row.p80Drawdown,1)}</dd></div><div><dt>腰斩概率</dt><dd>${formatPercent(row.halveRate,1)}</dd></div><div><dt>接近归零概率</dt><dd>${formatPercent(row.ruinRate,1)}</dd></div></dl>`;
     button.addEventListener('click',()=>selectStrategy(row.id,result));container.appendChild(button);
   }
 }
