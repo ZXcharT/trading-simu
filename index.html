@@ -38,7 +38,6 @@
       <label class="range-field"><span>胜率</span><output id="winRateValue">45%</output><input id="winRate" type="range" min="20" max="75" step="1" value="45"></label>
       <label class="range-field"><span>盈亏比</span><output id="rewardRiskValue">2.0</output><input id="rewardRisk" type="range" min="0.5" max="8" step="0.1" value="2"></label>
       <label class="range-field"><span>观察交易笔数</span><output id="tradesValue">100</output><input id="trades" type="range" min="50" max="500" step="10" value="100"></label>
-      <dl class="formula-preview"><div><dt>数学期望</dt><dd id="expectancyPreview">+0.350R</dd></div><div><dt>盈亏平衡胜率</dt><dd id="breakEvenPreview">33.3%</dd></div><div><dt>凯利上限</dt><dd id="kellyPreview">17.5%</dd></div></dl>
     </section>
     <details class="param-section boundary-section" open>
       <summary>收益目标与风险边界</summary>
@@ -58,7 +57,7 @@
 
   <div class="result-column">
     <section class="decision-summary">
-      <article class="expectancy-conclusion"><div class="summary-heading"><span class="eyebrow">单笔数学期望</span><strong id="expectancyResult">–</strong></div><dl><div><dt>盈亏平衡胜率</dt><dd id="breakEvenResult">–</dd></div><div><dt>当前胜率优势</dt><dd id="winEdgeResult">–</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">–</dd></div></dl></article>
+      <article class="expectancy-conclusion"><div class="summary-heading"><span class="eyebrow">单笔数学期望</span><strong id="expectancyResult">–</strong></div><dl><div><dt>盈亏平衡胜率</dt><dd id="breakEvenResult">–</dd></div><div><dt>高于盈亏平衡</dt><dd id="winEdgeResult">–</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">–</dd></div></dl></article>
       <article class="risk-conclusion"><div class="summary-heading"><span class="eyebrow">建议单笔风险上限</span><strong id="recommendedRisk">–</strong></div><dl><div><dt>建议测试风险</dt><dd id="testRisk">–</dd></div><div><dt>主要风险约束</dt><dd id="limitingFactor">–</dd></div><div><dt>收益目标</dt><dd id="targetStatus">–</dd></div></dl></article>
       <article class="handoff"><div class="summary-heading handoff-heading"><span class="eyebrow">应用到仓位计算器</span><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器</a></div><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">完成模拟后，可选择买点类型应用风险参数</p></article>
     </section>

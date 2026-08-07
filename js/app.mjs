@@ -35,6 +35,10 @@ function formatPoint(value){return Number.isFinite(value)?`${value>=0?'+':''}${v
 function formatMoney(value){if(!Number.isFinite(value))return'—';if(value>=1e8)return`${(value/1e8).toFixed(2)}亿`;if(value>=1e4)return`${(value/1e4).toFixed(2)}万`;return value.toFixed(1)}
 function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限','negative-expectancy':'数学期望 ≤ 0'})[value]||'—'}
 function targetStatusText(reverse){if(reverse.targetRequiredRisk===-1)return'当前策略不可达';return reverse.targetReachable?'安全上限内可达':'需突破风险边界'}
+function renderLiveSummary(summary,params){
+  const positive=summary.expectancy>0;
+  $('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyResult').style.color=positive?'var(--gain)':'var(--risk)';$('breakEvenResult').textContent=formatPercent(summary.breakEvenWinRate,1);$('winEdgeResult').textContent=formatPoint(params.winRate-summary.breakEvenWinRate);$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
+}
 
 function setStatus(status,label,meta=''){
   state.status=status;$('stateLabel').textContent=label;$('stateMeta').textContent=meta;$('mobileStateLabel').textContent=label;
@@ -44,11 +48,15 @@ function updateProgress(title,detail,percent=0){$('progressTitle').textContent=t
 function updateDraftFromInputs(){
   state.draft={...state.draft,winRate:+$('winRate').value,rewardRisk:+$('rewardRisk').value,trades:+$('trades').value,targetReturnIndex:+$('targetReturnIndex').value,maxDrawdown:+$('maxDrawdown').value,annualTrades:+$('annualTrades').value};
   $('winRateValue').textContent=`${state.draft.winRate}%`;$('rewardRiskValue').textContent=state.draft.rewardRisk.toFixed(1);$('tradesValue').textContent=state.draft.trades;$('targetReturnValue').textContent=`${TARGET_RETURN_VALUES[state.draft.targetReturnIndex]}%`;$('maxDrawdownValue').textContent=`${state.draft.maxDrawdown}%`;$('annualTradesValue').textContent=state.draft.annualTrades;
-  const summary=deterministicSummary(state.draft);
-  $('expectancyPreview').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyPreview').classList.toggle('negative',summary.expectancy<=0);$('breakEvenPreview').textContent=formatPercent(summary.breakEvenWinRate,1);$('kellyPreview').textContent=formatPercent(summary.fullKelly*100,2);
+  const summary=deterministicSummary(state.draft);renderLiveSummary(summary,state.draft);
   if(state.committed&&!sameParams(state.draft,state.committed)){
+    for(const id of ['syncCallback','syncStartup'])$(id).disabled=true;$('syncStatus').textContent='参数已改变，重新运行后可应用风险参数';
     if(state.activeJobId!=null)setStatus('computing','计算中','草稿已改变，可重新运行');
     else{setStatus('stale','参数已改变','需要重新运行');updateProgress('结果已过期','当前仍显示上一次完整结果',0)}
+  }else if(state.lastGoodResult&&state.activeJobId==null){
+    const executable=state.lastGoodResult.summary.expectancy>0&&state.lastGoodResult.reverse.recommendedRisk>0;
+    for(const id of ['syncCallback','syncStartup'])$(id).disabled=!executable;$('syncStatus').textContent=executable?'选择买点类型，将风险参数应用到仓位计算器':'数学期望 ≤ 0，暂不提供风险参数';
+    setStatus('completed','计算完成',`${state.lastGoodResult.params.runs.toLocaleString()} 次 · seed ${state.seed}`);updateProgress('计算完成','结果已原子更新',100);
   }
 }
 function requestRun({reshuffle=false}={}){
@@ -90,7 +98,6 @@ function handleFailure(message){clearTimeout(cancelTimer);cancelTimer=null;state
 function renderResult(result){
   $('errorPanel').hidden=true;const {summary,reverse}=result;
   const positive=summary.expectancy>0;
-  $('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyResult').style.color=positive?'var(--gain)':'var(--risk)';$('breakEvenResult').textContent=formatPercent(summary.breakEvenWinRate,1);$('winEdgeResult').textContent=formatPoint(result.params.winRate-summary.breakEvenWinRate);$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
   $('recommendedRisk').textContent=positive?formatPercent(reverse.recommendedRisk*100):'不提供建议';$('testRisk').textContent=positive?formatPercent(reverse.testRisk*100):'—';$('limitingFactor').textContent=limitingText(reverse.limitingFactor);$('targetStatus').textContent=positive?targetStatusText(reverse):'—';
   for(const id of ['syncCallback','syncStartup'])$(id).disabled=!positive||reverse.recommendedRisk<=0;
   $('syncStatus').textContent=positive?'选择买点类型，将风险参数应用到仓位计算器':'数学期望 ≤ 0，暂不提供风险参数';
