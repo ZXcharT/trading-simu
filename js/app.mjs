@@ -27,7 +27,8 @@ function ensureWorker(){if(!worker)worker=createWorker();return worker;}
 function sameParams(a,b){return a&&b&&JSON.stringify(a)===JSON.stringify(b)}
 function formatPercent(value,digits=2){return Number.isFinite(value)?`${value.toFixed(digits)}%`:'—'}
 function formatMoney(value){if(!Number.isFinite(value))return'—';if(value>=1e8)return`${(value/1e8).toFixed(2)}亿`;if(value>=1e4)return`${(value/1e4).toFixed(2)}万`;return value.toFixed(1)}
-function limitingText(value){return({drawdown:'最大回撤',return:'收益目标',kelly:'凯利上限','negative-expectancy':'负期望'})[value]||'—'}
+function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限','negative-expectancy':'负期望'})[value]||'—'}
+function targetStatusText(reverse){if(reverse.targetRequiredRisk===-1)return'当前策略不可达';return reverse.targetReachable?'安全上限内可达':'需突破风险边界'}
 
 function setStatus(status,label,meta=''){
   state.status=status;$('stateLabel').textContent=label;$('stateMeta').textContent=meta;
@@ -85,7 +86,7 @@ function renderResult(result){
   $('errorPanel').hidden=true;const {summary,reverse}=result;
   const positive=summary.expectancy>0;
   $('strategyStatus').textContent=positive?'正期望':'负期望';$('strategyStatus').style.color=positive?'var(--gain)':'var(--risk)';$('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
-  $('recommendedRisk').textContent=positive?formatPercent(reverse.recommendedRisk*100):'不提供建议';$('testRisk').textContent=positive?formatPercent(reverse.testRisk*100):'—';$('limitingFactor').textContent=limitingText(reverse.limitingFactor);
+  $('recommendedRisk').textContent=positive?formatPercent(reverse.recommendedRisk*100):'不提供建议';$('testRisk').textContent=positive?formatPercent(reverse.testRisk*100):'—';$('limitingFactor').textContent=limitingText(reverse.limitingFactor);$('targetStatus').textContent=positive?targetStatusText(reverse):'—';
   for(const id of ['syncCallback','syncStartup'])$(id).disabled=!positive||reverse.recommendedRisk<=0;
   $('syncStatus').textContent=positive?'选择买点类型，将风险建议带入仓位计算器':'负期望策略不提供可执行风险建议';
   renderLadder(result);renderDetails(null);charts.setResult(result);$('chartContext').textContent=result.params.basis==='decision'?'比较建议风险档位':'比较凯利理论档';$('clearStrategy').hidden=true;$('sampleToggle').textContent='显示样本路径';$('scaleToggle').textContent='尺度：聚焦';

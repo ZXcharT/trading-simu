@@ -57,7 +57,7 @@ export function deterministicSummary(params) {
   return { p, b, q, expectancy, breakEvenWinRate: 100 / (b + 1), fullKelly };
 }
 
-function targetRiskForReturn(p, b, annualTrades, targetReturn, fullKelly) {
+function minimumRiskForTarget(p, b, annualTrades, targetReturn, fullKelly) {
   const targetGrowth = Math.log(1 + targetReturn / 100) / annualTrades;
   const maxGrowth = p * Math.log(1 + b * fullKelly) + (1 - p) * Math.log(1 - fullKelly);
   if (maxGrowth < targetGrowth) return -1;
@@ -97,10 +97,10 @@ async function drawdownP80(p, b, trades, fraction, random, runtime, progressOffs
 
 async function reverseRisk(params, summary, random, runtime) {
   if (summary.expectancy <= 0 || summary.fullKelly <= 0) {
-    return { recommendedRisk: 0, testRisk: 0, returnRisk: -1, drawdownRisk: 0, limitingFactor: 'negative-expectancy', targetReachable: false };
+    return { recommendedRisk: 0, testRisk: 0, targetRequiredRisk: -1, drawdownRisk: 0, limitingFactor: 'negative-expectancy', targetReachable: false };
   }
   const targetReturn = TARGET_RETURN_VALUES[params.targetReturnIndex];
-  const returnRisk = targetRiskForReturn(summary.p, summary.b, params.annualTrades, targetReturn, summary.fullKelly);
+  const targetRequiredRisk = minimumRiskForTarget(summary.p, summary.b, params.annualTrades, targetReturn, summary.fullKelly);
   let low = 0, high = summary.fullKelly, drawdownRisk = summary.fullKelly;
   for (let step = 0; step < 8; step++) {
     const mid = (low + high) / 2;
@@ -108,12 +108,10 @@ async function reverseRisk(params, summary, random, runtime) {
     if (p80 > params.maxDrawdown / 100) high = mid;
     else { low = mid; drawdownRisk = mid; }
   }
-  let recommendedRisk = Math.min(summary.fullKelly, drawdownRisk);
-  if (returnRisk !== -1) recommendedRisk = Math.min(recommendedRisk, returnRisk);
-  let limitingFactor = 'kelly';
-  if (recommendedRisk === drawdownRisk) limitingFactor = 'drawdown';
-  if (returnRisk !== -1 && recommendedRisk === returnRisk) limitingFactor = 'return';
-  return { recommendedRisk, testRisk: recommendedRisk / 2, returnRisk, drawdownRisk, limitingFactor, targetReachable: returnRisk !== -1, targetReturn };
+  const recommendedRisk = Math.min(summary.fullKelly, drawdownRisk);
+  const limitingFactor = drawdownRisk < summary.fullKelly ? 'drawdown' : 'kelly';
+  const targetReachable = targetRequiredRisk !== -1 && recommendedRisk >= targetRequiredRisk;
+  return { recommendedRisk, testRisk: recommendedRisk / 2, targetRequiredRisk, drawdownRisk, limitingFactor, targetReachable, targetReturn };
 }
 
 function strategyDefinitions(basis, summary, reverse) {

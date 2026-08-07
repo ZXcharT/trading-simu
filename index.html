@@ -42,8 +42,8 @@
       <dl class="formula-preview"><div><dt>数学期望</dt><dd id="expectancyPreview">+0.350R</dd></div><div><dt>盈亏平衡胜率</dt><dd id="breakEvenPreview">33.3%</dd></div><div><dt>凯利上限</dt><dd id="kellyPreview">17.5%</dd></div></dl>
     </section>
     <details class="param-section boundary-section" open>
-      <summary>风险边界</summary>
-      <label class="range-field"><span>目标年化收益</span><output id="targetReturnValue">50%</output><input id="targetReturnIndex" type="range" min="0" max="60" step="1" value="30"></label>
+      <summary>收益目标与风险边界</summary>
+      <label class="range-field"><span>目标年化收益</span><output id="targetReturnValue">50%</output><input id="targetReturnIndex" type="range" min="0" max="55" step="1" value="30"></label>
       <label class="range-field"><span>可承受回撤</span><output id="maxDrawdownValue">20%</output><input id="maxDrawdown" type="range" min="5" max="60" step="1" value="20"></label>
       <label class="range-field"><span>年均交易笔数</span><output id="annualTradesValue">50</output><input id="annualTrades" type="range" min="25" max="200" step="1" value="50"></label>
     </details>
@@ -62,7 +62,7 @@
     <section class="progress-row" aria-live="polite"><div><strong id="progressTitle">准备计算</strong><span id="progressDetail">默认参数将自动运行</span></div><div class="progress-track"><span id="progressBar"></span></div><button id="cancelButton" type="button" disabled>取消</button></section>
     <section class="decision-summary">
       <article><span class="eyebrow">策略状态</span><strong id="strategyStatus">等待结果</strong><dl><div><dt>数学期望</dt><dd id="expectancyResult">—</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">—</dd></div></dl></article>
-      <article class="risk-conclusion"><span class="eyebrow">当前结论</span><strong id="recommendedRisk">—</strong><p>建议单笔风险上限</p><dl><div><dt>测试风险</dt><dd id="testRisk">—</dd></div><div><dt>限制因素</dt><dd id="limitingFactor">—</dd></div></dl></article>
+      <article class="risk-conclusion"><span class="eyebrow">当前结论</span><strong id="recommendedRisk">—</strong><p>建议单笔风险上限</p><dl><div><dt>测试风险</dt><dd id="testRisk">—</dd></div><div><dt>风险上限来自</dt><dd id="limitingFactor">—</dd></div><div><dt>收益目标</dt><dd id="targetStatus">—</dd></div></dl></article>
       <article class="handoff"><span class="eyebrow">用于仓位计算</span><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">模拟完成后可带入仓位计算器</p><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器</a></article>
     </section>
 

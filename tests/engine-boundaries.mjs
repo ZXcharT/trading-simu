@@ -5,4 +5,9 @@ const base={winRate:45,rewardRisk:2,trades:50,runs:100,targetReturnIndex:30,maxD
 const negative=await simulate({...base,winRate:20,rewardRisk:.5},createLcg(1));assert.equal(negative.summary.expectancy<0,true);assert.equal(negative.reverse.recommendedRisk,0);assert.ok(negative.strategies.every(s=>s.median.every(v=>v===100)));
 let cancelled=false,yields=0;try{await simulate({...base,trades:500,runs:2000,basis:'theory'},createLcg(2),{isCancelled:()=>cancelled,yieldControl:async()=>{yields++;if(yields===3)cancelled=true}})}catch(error){assert.ok(error instanceof CancelledError)}assert.equal(cancelled,true);assert.equal(yields,3);
 const capped=await simulate({...base,winRate:75,rewardRisk:8,trades:500,runs:100},createLcg(3));assert.ok(capped.strategies.every(s=>s.absoluteMax<=1e80&&s.absoluteMin>=.001));
-console.log('ENGINE_BOUNDARY_CANCEL_PASS 3');
+const lowTarget=await simulate({...base,targetReturnIndex:0},createLcg(4));
+const highTarget=await simulate({...base,targetReturnIndex:55},createLcg(4));
+assert.equal(lowTarget.reverse.recommendedRisk,highTarget.reverse.recommendedRisk,'收益目标不得改变风险上限');
+assert.equal(lowTarget.reverse.limitingFactor==='return'||highTarget.reverse.limitingFactor==='return',false,'收益目标不得成为限制因素');
+assert.equal(lowTarget.reverse.targetReachable,true);assert.equal(highTarget.reverse.targetReachable,false);
+console.log('ENGINE_BOUNDARY_TARGET_PASS 5');
