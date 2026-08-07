@@ -156,93 +156,116 @@ function copyPath(matrix, runIndex, stride) {
   return matrix.slice(runIndex * stride, (runIndex + 1) * stride);
 }
 
+async function aggregateStrategy(definition, context) {
+  const { params, summary, outcomes, runtime, progress } = context;
+  const { runs, trades } = params;
+  const stride = trades + 1;
+  const matrix = new Float64Array(runs * stride);
+  const drawdowns = new Float64Array(runs);
+  let absoluteMin = Infinity, absoluteMax = -Infinity;
+
+  for (let r = 0; r < runs; r++) {
+    let equity = 100, peak = 100, maxDrawdown = 0;
+    matrix[r * stride] = 100;
+    for (let t = 1; t <= trades; t++) {
+      if (equity > 0.001 && definition.fraction > 0 && summary.fullKelly > 0) {
+        equity *= outcomes[r * trades + t - 1] ? 1 + summary.b * definition.fraction : 1 - definition.fraction;
+        if (equity > 1e80) equity = 1e80;
+        if (equity < 0.001) equity = 0.001;
+      } else if (equity <= 0.001) equity = 0.001;
+      matrix[r * stride + t] = equity;
+      if (equity > peak) peak = equity;
+      const drawdown = (peak - equity) / peak;
+      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+      if (equity < absoluteMin) absoluteMin = equity;
+      if (equity > absoluteMax) absoluteMax = equity;
+    }
+    drawdowns[r] = maxDrawdown;
+    if ((r + 1) % 200 === 0 || r === runs - 1) {
+      await checkpoint(runtime, 'paths', progress.pathOffset + r + 1, progress.pathTotal);
+    }
+  }
+
+  const finalValues = new Float64Array(runs);
+  let minRun = 0, maxRun = 0, minFinal = Infinity, maxFinal = -Infinity;
+  let ruinCount = 0, halveCount = 0;
+  for (let r = 0; r < runs; r++) {
+    const value = matrix[r * stride + trades];
+    finalValues[r] = value;
+    if (value < minFinal) { minFinal = value; minRun = r; }
+    if (value > maxFinal) { maxFinal = value; maxRun = r; }
+    if (value < 10) ruinCount++;
+    if (value < 50) halveCount++;
+  }
+  drawdowns.sort();
+  const work = new Float64Array(runs);
+  const p10 = new Float64Array(stride), median = new Float64Array(stride), p90 = new Float64Array(stride);
+  for (let t = 0; t < stride; t++) {
+    for (let r = 0; r < runs; r++) work[r] = matrix[r * stride + t];
+    work.sort();
+    p10[t] = work[Math.floor(runs * 0.1)];
+    median[t] = work[Math.floor(runs * 0.5)];
+    p90[t] = work[Math.floor(runs * 0.9)];
+    if ((t + 1) % 50 === 0 || t === trades) {
+      await checkpoint(runtime, 'aggregate', progress.aggregateOffset + t + 1, progress.aggregateTotal);
+    }
+  }
+  const sampleCount = Math.min(30, runs);
+  const samples = new Float64Array(sampleCount * stride);
+  for (let r = 0; r < sampleCount; r++) samples.set(matrix.subarray(r * stride, (r + 1) * stride), r * stride);
+  const distribution = kde(finalValues);
+  await checkpoint(runtime, 'distribution', progress.distributionIndex + 1, progress.distributionTotal);
+  return {
+    ...definition, runs, trades, stride, sampleCount, absoluteMin, absoluteMax,
+    ruinRate: ruinCount / runs * 100, halveRate: halveCount / runs * 100,
+    p80Drawdown: drawdowns[Math.floor(runs * 0.8)] * 100,
+    minPath: copyPath(matrix, minRun, stride), maxPath: copyPath(matrix, maxRun, stride),
+    p10, median, p90, samples, finalValues,
+    distributionX: distribution.x, distributionY: distribution.y
+  };
+}
+
 export async function simulate(params, random = Math.random, runtime = {}) {
   const summary = deterministicSummary(params);
   const reverse = await reverseRisk(params, summary, random, runtime);
-  const definitions = strategyDefinitions(params.basis || 'decision', summary, reverse);
-  const strategyCount = definitions.length;
-  const runs = params.runs;
-  const trades = params.trades;
-  const stride = trades + 1;
-  const matrices = definitions.map(() => new Float64Array(runs * stride));
-  const drawdowns = definitions.map(() => new Float64Array(runs));
-  const absoluteMin = new Float64Array(strategyCount); absoluteMin.fill(Infinity);
-  const absoluteMax = new Float64Array(strategyCount); absoluteMax.fill(-Infinity);
-
+  const bases = Array.isArray(params.bases) && params.bases.length ? params.bases : [params.basis || 'decision'];
+  const definitionsByBasis = Object.fromEntries(bases.map(basis => [basis, strategyDefinitions(basis, summary, reverse)]));
+  const totalStrategies = Object.values(definitionsByBasis).reduce((total, definitions) => total + definitions.length, 0);
+  const { runs, trades } = params;
+  const outcomes = new Uint8Array(runs * trades);
+  const pathTotal = runs * (totalStrategies + 1);
   for (let r = 0; r < runs; r++) {
-    const equities = new Float64Array(strategyCount); equities.fill(100);
-    const peaks = new Float64Array(strategyCount); peaks.fill(100);
-    const maxDrawdowns = new Float64Array(strategyCount);
-    for (let s = 0; s < strategyCount; s++) matrices[s][r * stride] = 100;
-    for (let t = 1; t <= trades; t++) {
-      const win = random() < summary.p;
-      for (let s = 0; s < strategyCount; s++) {
-        const fraction = definitions[s].fraction;
-        let equity = equities[s];
-        if (equity > 0.001 && fraction > 0 && summary.fullKelly > 0) {
-          equity *= win ? 1 + summary.b * fraction : 1 - fraction;
-          if (equity > 1e80) equity = 1e80;
-          if (equity < 0.001) equity = 0.001;
-        } else if (equity <= 0.001) equity = 0.001;
-        equities[s] = equity;
-        matrices[s][r * stride + t] = equity;
-        if (equity > peaks[s]) peaks[s] = equity;
-        const dd = (peaks[s] - equity) / peaks[s];
-        if (dd > maxDrawdowns[s]) maxDrawdowns[s] = dd;
-        if (equity < absoluteMin[s]) absoluteMin[s] = equity;
-        if (equity > absoluteMax[s]) absoluteMax[s] = equity;
-      }
-    }
-    for (let s = 0; s < strategyCount; s++) drawdowns[s][r] = maxDrawdowns[s];
-    if ((r + 1) % 25 === 0 || r === runs - 1) await checkpoint(runtime, 'paths', r + 1, runs);
+    for (let t = 0; t < trades; t++) outcomes[r * trades + t] = random() < summary.p ? 1 : 0;
+    if ((r + 1) % 200 === 0 || r === runs - 1) await checkpoint(runtime, 'paths', r + 1, pathTotal);
   }
 
-  const strategies = [];
-  const work = new Float64Array(runs);
-  for (let s = 0; s < strategyCount; s++) {
-    const matrix = matrices[s];
-    const finalValues = new Float64Array(runs);
-    let minRun = 0, maxRun = 0, minFinal = Infinity, maxFinal = -Infinity;
-    let ruinCount = 0, halveCount = 0;
-    for (let r = 0; r < runs; r++) {
-      const value = matrix[r * stride + trades];
-      finalValues[r] = value;
-      if (value < minFinal) { minFinal = value; minRun = r; }
-      if (value > maxFinal) { maxFinal = value; maxRun = r; }
-      if (value < 10) ruinCount++;
-      if (value < 50) halveCount++;
+  const strategiesByBasis = {};
+  let strategyIndex = 0;
+  const stride = trades + 1;
+  for (const basis of bases) {
+    const strategies = [];
+    for (const definition of definitionsByBasis[basis]) {
+      strategies.push(await aggregateStrategy(definition, {
+        params, summary, outcomes, runtime,
+        progress: {
+          pathOffset: runs * (strategyIndex + 1), pathTotal,
+          aggregateOffset: strategyIndex * stride, aggregateTotal: totalStrategies * stride,
+          distributionIndex: strategyIndex, distributionTotal: totalStrategies
+        }
+      }));
+      strategyIndex++;
     }
-    drawdowns[s].sort();
-    const p10 = new Float64Array(stride), median = new Float64Array(stride), p90 = new Float64Array(stride);
-    for (let t = 0; t < stride; t++) {
-      for (let r = 0; r < runs; r++) work[r] = matrix[r * stride + t];
-      work.sort();
-      p10[t] = work[Math.floor(runs * 0.1)];
-      median[t] = work[Math.floor(runs * 0.5)];
-      p90[t] = work[Math.floor(runs * 0.9)];
-      if ((t + 1) % 10 === 0 || t === trades) await checkpoint(runtime, 'aggregate', s * stride + t + 1, strategyCount * stride);
-    }
-    const sampleCount = Math.min(30, runs);
-    const samples = new Float64Array(sampleCount * stride);
-    for (let r = 0; r < sampleCount; r++) samples.set(matrix.subarray(r * stride, (r + 1) * stride), r * stride);
-    const distribution = kde(finalValues);
-    strategies.push({
-      ...definitions[s], runs, trades, stride, sampleCount,
-      absoluteMin: absoluteMin[s], absoluteMax: absoluteMax[s],
-      ruinRate: ruinCount / runs * 100, halveRate: halveCount / runs * 100,
-      p80Drawdown: drawdowns[s][Math.floor(runs * 0.8)] * 100,
-      minPath: copyPath(matrix, minRun, stride), maxPath: copyPath(matrix, maxRun, stride),
-      p10, median, p90, samples, finalValues,
-      distributionX: distribution.x, distributionY: distribution.y
-    });
-    await checkpoint(runtime, 'distribution', s + 1, strategyCount);
+    strategiesByBasis[basis] = strategies;
   }
-  return { params: { ...params }, summary, reverse, strategies, completedAt: Date.now() };
+  const result = { params: { ...params }, summary, reverse, strategiesByBasis, completedAt: Date.now() };
+  result.strategies = strategiesByBasis[bases[0]];
+  return result;
 }
 
 export function transferableBuffers(result) {
   const buffers = [];
-  for (const strategy of result.strategies) {
+  const groups = result.strategiesByBasis ? Object.values(result.strategiesByBasis) : [result.strategies];
+  for (const strategies of groups) for (const strategy of strategies) {
     for (const key of ['minPath','maxPath','p10','median','p90','samples','finalValues','distributionX','distributionY']) buffers.push(strategy[key].buffer);
   }
   return buffers;

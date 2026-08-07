@@ -29,7 +29,6 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
   let current = null;
   let selectedId = null;
   let scaleMode = 'focus';
-  let showSamples = false;
 
   function renderPath() {
     if (!current) return;
@@ -37,8 +36,9 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
     const selected = current.strategies.find(row => row.id === selectedId) || null;
     const range = bounds(current,selected,scaleMode);
     const series = [];
+    const legendData = [];
     if (!selected) {
-      for (const row of current.strategies) series.push({ name:row.name, type:'line', data:Array.from(row.median), symbol:'none', lineStyle:{ color:row.color, width:2 }, itemStyle:{ color:row.color } });
+      for (const row of current.strategies) {legendData.push(row.name);series.push({ name:row.name, type:'line', data:Array.from(row.median), symbol:'none', triggerLineEvent:true, lineStyle:{ color:row.color, width:2 }, itemStyle:{ color:row.color } });}
     } else {
       const paths = [
         ['最高样本',selected.maxPath,colors.ink,'dashed',1.3],
@@ -47,20 +47,18 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
         ['P10',selected.p10,selected.color,'dotted',1.6],
         ['最低样本',selected.minPath,colors.risk,'dashed',1.3]
       ];
-      for (const [name,data,color,type,width] of paths) series.push({ name,type:'line',data:Array.from(data),symbol:'none',lineStyle:{color,type,width},itemStyle:{color} });
-      if (showSamples) {
-        for (let i=0;i<selected.sampleCount;i++) {
-          const start=i*selected.stride;
-          series.push({ name:`样本 ${i+1}`,type:'line',data:Array.from(selected.samples.subarray(start,start+selected.stride)),symbol:'none',silent:true,lineStyle:{color:selected.color,width:.7,opacity:.12},animation:false });
-        }
+      for (const [name,data,color,type,width] of paths) {legendData.push(name);series.push({ name,type:'line',data:Array.from(data),symbol:'none',triggerLineEvent:true,lineStyle:{color,type,width},itemStyle:{color} });}
+      for (let i=0;i<selected.sampleCount;i++) {
+        const start=i*selected.stride;
+        series.push({ name:`样本 ${i+1}`,type:'line',data:Array.from(selected.samples.subarray(start,start+selected.stride)),symbol:'none',triggerLineEvent:true,lineStyle:{color:selected.color,width:.7,opacity:.12},emphasis:{lineStyle:{width:1.4,opacity:.8}},animation:false });
       }
     }
     series.push({ name:'起始资金',type:'line',data:[],markLine:{silent:true,symbol:'none',data:[{yAxis:100}],lineStyle:{color:colors.line},label:{formatter:'起始资金 100',color:colors.muted}} });
     pathChart.setOption({
       animation:false,backgroundColor:'transparent',
-      tooltip:{trigger:'axis',backgroundColor:colors.paper,borderColor:colors.line,textStyle:{color:colors.text},valueFormatter:value=>`$${money(value)}`},
+      tooltip:{trigger:'item',backgroundColor:colors.paper,borderColor:colors.line,textStyle:{color:colors.text},formatter:item=>`${item.seriesName}<br>第 ${item.dataIndex} 笔 · $${money(item.value)}`},
       grid:{left:58,right:30,top:28,bottom:44},
-      legend:{show:true,top:0,textStyle:{color:colors.muted,fontSize:10},type:'scroll'},
+      legend:{show:true,top:0,data:legendData,textStyle:{color:colors.muted,fontSize:10},type:'scroll'},
       xAxis:{type:'category',boundaryGap:false,data:Array.from({length:current.params.trades+1},(_,i)=>i),name:'交易次数',nameLocation:'middle',nameGap:28,axisLabel:{color:colors.muted},axisLine:{lineStyle:{color:colors.line}},splitLine:{show:false}},
       yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'资金',axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
       series
@@ -116,14 +114,13 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
   distributionChart.getZr().on('dblclick',()=>{scaleMode=scaleMode==='focus'?'full':'focus';renderPath();renderDistribution();});
 
   return {
-    setResult(result){current=result;selectedId=null;showSamples=false;renderPath();renderDistribution();},
+    setResult(result){current=result;selectedId=null;renderPath();renderDistribution();},
     selectStrategy(id){selectedId=selectedId===id?null:id;renderPath();renderDistribution();},
     clearSelection(){selectedId=null;renderPath();renderDistribution();},
-    toggleSamples(){showSamples=!showSamples;renderPath();return showSamples;},
     toggleScale(){scaleMode=scaleMode==='focus'?'full':'focus';renderPath();renderDistribution();return scaleMode;},
     clearRange(){distributionChart.dispatchAction({type:'brush',areas:[]});onRange?.(null);},
     refreshTheme(){renderPath();renderDistribution();},
     resize(){pathChart.resize();distributionChart.resize();},
-    getState(){return {selectedId,scaleMode,showSamples};}
+    getState(){return {selectedId,scaleMode};}
   };
 }

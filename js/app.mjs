@@ -5,8 +5,8 @@ import { syncRiskSuggestion } from './kelly-sync.mjs';
 const $ = id => document.getElementById(id);
 const stageNames = { reverse:'计算风险边界', paths:'生成随机路径', aggregate:'统计分位结果', distribution:'生成结果分布' };
 const state = {
-  draft:{winRate:45,rewardRisk:2,trades:100,runs:1000,targetReturnIndex:30,maxDrawdown:20,annualTrades:50,basis:'decision'},
-  committed:null,lastGoodResult:null,status:'idle',jobCounter:0,activeJobId:null,pending:null,seed:null
+  draft:{winRate:45,rewardRisk:2,trades:100,runs:2000,targetReturnIndex:30,maxDrawdown:20,annualTrades:50},
+  viewBasis:'decision',committed:null,lastGoodResult:null,status:'idle',jobCounter:0,activeJobId:null,pending:null,seed:null
 };
 let worker = null;
 let cancelTimer = null;
@@ -24,7 +24,12 @@ function createWorker() {
   return next;
 }
 function ensureWorker(){if(!worker)worker=createWorker();return worker;}
-function sameParams(a,b){return a&&b&&JSON.stringify(a)===JSON.stringify(b)}
+function sameParams(a,b){
+  if(!a||!b)return false;
+  const comparable=value=>{const {basis,bases,...rest}=value;return rest};
+  return JSON.stringify(comparable(a))===JSON.stringify(comparable(b));
+}
+function resultForBasis(result,basis=state.viewBasis){return {...result,params:{...result.params,basis},strategies:result.strategiesByBasis[basis]}}
 function formatPercent(value,digits=2){return Number.isFinite(value)?`${value.toFixed(digits)}%`:'—'}
 function formatMoney(value){if(!Number.isFinite(value))return'—';if(value>=1e8)return`${(value/1e8).toFixed(2)}亿`;if(value>=1e4)return`${(value/1e4).toFixed(2)}万`;return value.toFixed(1)}
 function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限','negative-expectancy':'负期望'})[value]||'—'}
@@ -36,11 +41,10 @@ function setStatus(status,label,meta=''){
 }
 function updateProgress(title,detail,percent=0){$('progressTitle').textContent=title;$('progressDetail').textContent=detail;$('progressBar').style.transform=`scaleX(${Math.max(0,Math.min(100,percent))/100})`}
 function updateDraftFromInputs(){
-  state.draft={...state.draft,winRate:+$('winRate').value,rewardRisk:+$('rewardRisk').value,trades:+$('trades').value,runs:+$('runs').value,targetReturnIndex:+$('targetReturnIndex').value,maxDrawdown:+$('maxDrawdown').value,annualTrades:+$('annualTrades').value};
-  $('winRateValue').textContent=`${state.draft.winRate}%`;$('rewardRiskValue').textContent=state.draft.rewardRisk.toFixed(1);$('tradesValue').textContent=state.draft.trades;$('runsValue').textContent=state.draft.runs;$('targetReturnValue').textContent=`${TARGET_RETURN_VALUES[state.draft.targetReturnIndex]}%`;$('maxDrawdownValue').textContent=`${state.draft.maxDrawdown}%`;$('annualTradesValue').textContent=state.draft.annualTrades;
+  state.draft={...state.draft,winRate:+$('winRate').value,rewardRisk:+$('rewardRisk').value,trades:+$('trades').value,targetReturnIndex:+$('targetReturnIndex').value,maxDrawdown:+$('maxDrawdown').value,annualTrades:+$('annualTrades').value};
+  $('winRateValue').textContent=`${state.draft.winRate}%`;$('rewardRiskValue').textContent=state.draft.rewardRisk.toFixed(1);$('tradesValue').textContent=state.draft.trades;$('targetReturnValue').textContent=`${TARGET_RETURN_VALUES[state.draft.targetReturnIndex]}%`;$('maxDrawdownValue').textContent=`${state.draft.maxDrawdown}%`;$('annualTradesValue').textContent=state.draft.annualTrades;
   const summary=deterministicSummary(state.draft);
   $('expectancyPreview').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyPreview').classList.toggle('negative',summary.expectancy<=0);$('breakEvenPreview').textContent=formatPercent(summary.breakEvenWinRate,1);$('kellyPreview').textContent=formatPercent(summary.fullKelly*100,2);
-  document.querySelectorAll('[data-runs]').forEach(button=>button.classList.toggle('active',+button.dataset.runs===state.draft.runs));
   if(state.committed&&!sameParams(state.draft,state.committed)){
     if(state.activeJobId!=null)setStatus('computing','计算中','草稿已改变，可重新运行');
     else{setStatus('stale','参数已改变','需要重新运行');updateProgress('结果已过期','当前仍显示上一次完整结果',0)}
@@ -48,7 +52,7 @@ function updateDraftFromInputs(){
 }
 function requestRun({reshuffle=false}={}){
   updateDraftFromInputs();
-  const request={type:'run',jobId:++state.jobCounter,params:{...state.draft}};
+  const request={type:'run',jobId:++state.jobCounter,params:{...state.draft,bases:['decision','theory']}};
   if(!reshuffle&&state.seed!=null)request.seed=state.seed;
   if(reshuffle)state.seed=null;
   if(state.activeJobId!=null){
@@ -89,19 +93,23 @@ function renderResult(result){
   $('recommendedRisk').textContent=positive?formatPercent(reverse.recommendedRisk*100):'不提供建议';$('testRisk').textContent=positive?formatPercent(reverse.testRisk*100):'—';$('limitingFactor').textContent=limitingText(reverse.limitingFactor);$('targetStatus').textContent=positive?targetStatusText(reverse):'—';
   for(const id of ['syncCallback','syncStartup'])$(id).disabled=!positive||reverse.recommendedRisk<=0;
   $('syncStatus').textContent=positive?'选择买点类型，将风险建议带入仓位计算器':'负期望策略不提供可执行风险建议';
-  renderLadder(result);renderDetails(null);charts.setResult(result);$('chartContext').textContent=result.params.basis==='decision'?'比较建议风险档位':'比较凯利理论档';$('clearStrategy').hidden=true;$('sampleToggle').textContent='显示样本路径';$('scaleToggle').textContent='尺度：聚焦';
+  renderBasis(result);
+}
+function renderBasis(result){
+  const view=resultForBasis(result);renderLadder(view);renderDetails(null);charts.setResult(view);$('chartContext').textContent=state.viewBasis==='decision'?'比较建议风险档位':'比较凯利理论档';$('clearStrategy').hidden=true;$('scaleToggle').textContent='尺度：聚焦';
 }
 function renderLadder(result){
   const container=$('riskLadder');container.replaceChildren();
   for(const row of result.strategies){
     const button=document.createElement('button');button.type='button';button.className='risk-item';button.style.setProperty('--strategy-color',row.color);button.dataset.strategy=row.id;
-    button.innerHTML=`<strong>${row.name}</strong><span>单笔风险 ${formatPercent(row.fraction*100,2)}</span><dl><div><dt>最终资金中位数</dt><dd>${formatMoney(row.median[row.trades])}</dd></div><div><dt>劣势回撤</dt><dd>${formatPercent(row.p80Drawdown,1)}</dd></div><div><dt>腰斩概率</dt><dd>${formatPercent(row.halveRate,1)}</dd></div><div><dt>接近归零概率</dt><dd>${formatPercent(row.ruinRate,1)}</dd></div></dl>`;
+    button.innerHTML=`<strong>${row.name}</strong><div class="risk-primary"><span>单笔风险</span><b>${formatPercent(row.fraction*100,2)}</b></div><dl><div><dt>最终资金中位数</dt><dd>${formatMoney(row.median[row.trades])}</dd></div><div><dt>劣势回撤</dt><dd>${formatPercent(row.p80Drawdown,1)}</dd></div><div><dt>腰斩概率</dt><dd>${formatPercent(row.halveRate,1)}</dd></div><div><dt>接近归零概率</dt><dd>${formatPercent(row.ruinRate,1)}</dd></div></dl>`;
     button.addEventListener('click',()=>selectStrategy(row.id,result));container.appendChild(button);
   }
 }
-function selectStrategy(id,result=state.lastGoodResult){
+function selectStrategy(id,result=state.lastGoodResult?resultForBasis(state.lastGoodResult):null){
+  if(!result)return;
   charts.selectStrategy(id);const selectedId=charts.getState().selectedId;document.querySelectorAll('.risk-item').forEach(item=>item.classList.toggle('active',item.dataset.strategy===selectedId));$('clearStrategy').hidden=!selectedId;
-  const row=result.strategies.find(item=>item.id===selectedId)||null;$('chartContext').textContent=row?`正在分析：${row.name}`:(result.params.basis==='decision'?'比较建议风险档位':'比较凯利理论档');renderDetails(row);
+  const row=result.strategies.find(item=>item.id===selectedId)||null;$('chartContext').textContent=row?`正在分析：${row.name} · 自动显示样本路径`:(state.viewBasis==='decision'?'比较建议风险档位':'比较凯利理论档');renderDetails(row);
 }
 function renderDetails(row){const box=$('detailContent');if(!row){box.innerHTML='<p>选择一个风险档后查看最低样本、中位数和最高样本。</p>';return}box.innerHTML=`<article><span>最低样本结果</span><strong>${formatMoney(row.minPath[row.trades])}</strong></article><article><span>中位数结果</span><strong>${formatMoney(row.median[row.trades])}</strong></article><article><span>最高样本结果</span><strong>${formatMoney(row.maxPath[row.trades])}</strong></article>`}
 function renderRange(value){const box=$('rangeResult');if(!value){box.hidden=true;return}box.hidden=false;box.textContent=`资金区间 ${formatMoney(value.low)} 至 ${formatMoney(value.high)}，落入概率 ${formatPercent(value.probability,1)}`}
@@ -113,14 +121,14 @@ function syncTo(buyPoint){
   $('syncStatus').textContent=sync.ok?`已保存到${label} · ${time}`:`${label}同步受限，请打开仓位计算器确认`;
 }
 
-function setBasis(basis){if(state.draft.basis===basis)return;state.draft={...state.draft,basis};document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕建议风险上限比较不同档位':'比较完整凯利理论档位（高级）';if(state.committed){if(state.activeJobId!=null)setStatus('computing','计算中','比较基准已改变，可重新运行');else{setStatus('stale','比较基准已改变','需要重新运行');updateProgress('结果已过期','运行后更新风险档位和图表',0)}}}
+function setBasis(basis){if(state.viewBasis===basis)return;state.viewBasis=basis;document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕建议风险上限比较不同档位':'比较完整凯利理论档位（高级）';if(state.lastGoodResult)renderBasis(state.lastGoodResult)}
 function syncTheme(){const dark=document.documentElement.dataset.theme==='dark';$('themeLabel').textContent=dark?'浅色':'深色';$('themeToggle').setAttribute('aria-label',dark?'切换到浅色模式':'切换到深色模式');document.querySelector('meta[name=theme-color]').content=dark?'#0f1216':'#f3f4f6'}
 function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;document.documentElement.style.colorScheme=next;try{localStorage.setItem('onechart-theme',next)}catch{}syncTheme();charts.refreshTheme()}
 function toggleDrawer(open){$('parameterPanel').classList.toggle('active',open);$('drawerOverlay').classList.toggle('active',open)}
 
-for(const id of ['winRate','rewardRisk','trades','runs','targetReturnIndex','maxDrawdown','annualTrades'])$(id).addEventListener('input',updateDraftFromInputs);
-document.querySelectorAll('[data-runs]').forEach(button=>button.addEventListener('click',()=>{$('runs').value=button.dataset.runs;updateDraftFromInputs()}));document.querySelectorAll('[data-basis]').forEach(button=>button.addEventListener('click',()=>setBasis(button.dataset.basis)));
-$('runButton').addEventListener('click',()=>requestRun());$('reshuffleButton').addEventListener('click',()=>requestRun({reshuffle:true}));$('cancelButton').addEventListener('click',cancelCurrent);$('clearStrategy').addEventListener('click',()=>{charts.clearSelection();selectStrategy(null)});$('sampleToggle').addEventListener('click',()=>{$('sampleToggle').textContent=charts.toggleSamples()?'隐藏样本路径':'显示样本路径'});$('scaleToggle').addEventListener('click',()=>{$('scaleToggle').textContent=`尺度：${charts.toggleScale()==='focus'?'聚焦':'全量'}`});$('rangeReset').addEventListener('click',()=>charts.clearRange());$('syncCallback').addEventListener('click',()=>syncTo('callback'));$('syncStartup').addEventListener('click',()=>syncTo('startup'));$('themeToggle').addEventListener('click',toggleTheme);$('mobileParamsButton').addEventListener('click',()=>toggleDrawer(true));$('closeParams').addEventListener('click',()=>toggleDrawer(false));$('drawerOverlay').addEventListener('click',()=>toggleDrawer(false));window.addEventListener('resize',()=>charts.resize());
+for(const id of ['winRate','rewardRisk','trades','targetReturnIndex','maxDrawdown','annualTrades'])$(id).addEventListener('input',updateDraftFromInputs);
+document.querySelectorAll('[data-basis]').forEach(button=>button.addEventListener('click',()=>setBasis(button.dataset.basis)));
+$('runButton').addEventListener('click',()=>requestRun());$('reshuffleButton').addEventListener('click',()=>requestRun({reshuffle:true}));$('cancelButton').addEventListener('click',cancelCurrent);$('clearStrategy').addEventListener('click',()=>{charts.clearSelection();selectStrategy(null)});$('scaleToggle').addEventListener('click',()=>{$('scaleToggle').textContent=`尺度：${charts.toggleScale()==='focus'?'聚焦':'全量'}`});$('rangeReset').addEventListener('click',()=>charts.clearRange());$('syncCallback').addEventListener('click',()=>syncTo('callback'));$('syncStartup').addEventListener('click',()=>syncTo('startup'));$('themeToggle').addEventListener('click',toggleTheme);$('mobileParamsButton').addEventListener('click',()=>toggleDrawer(true));$('closeParams').addEventListener('click',()=>toggleDrawer(false));$('drawerOverlay').addEventListener('click',()=>toggleDrawer(false));window.addEventListener('resize',()=>charts.resize());
 
 syncTheme();updateDraftFromInputs();ensureWorker();requestRun({reshuffle:true});
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

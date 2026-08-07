@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trading-simu-v4';
+const CACHE_NAME = 'trading-simu-v5';
 const CORE = [
   './','./index.html','./styles.css','./manifest.json','./icons/icon-192.png','./icons/icon-512.png',
   './vendor/echarts.min.js',

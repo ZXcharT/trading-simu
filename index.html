@@ -47,14 +47,7 @@
       <label class="range-field"><span>可承受回撤</span><output id="maxDrawdownValue">20%</output><input id="maxDrawdown" type="range" min="5" max="60" step="1" value="20"></label>
       <label class="range-field"><span>年均交易笔数</span><output id="annualTradesValue">50</output><input id="annualTrades" type="range" min="25" max="200" step="1" value="50"></label>
     </details>
-    <section class="param-section precision-section">
-      <h3>模拟精度</h3>
-      <div class="precision-options" role="group" aria-label="模拟精度">
-        <button type="button" data-runs="300">快速</button><button class="active" type="button" data-runs="1000">标准</button><button type="button" data-runs="2000">深度</button>
-      </div>
-      <label class="range-field compact"><span>样本数</span><output id="runsValue">1000</output><input id="runs" type="range" min="100" max="2000" step="100" value="1000"></label>
-      <p class="field-note">样本越多，分布越稳定，计算时间和内存占用也越高。</p>
-    </section>
+    <p class="simulation-depth">深度模拟 · 2,000 次共同随机路径</p>
     <div class="run-actions"><button id="runButton" class="primary-button" type="button">运行模拟</button><button id="reshuffleButton" class="secondary-button" type="button">重新抽样</button></div>
   </aside>
 
@@ -73,7 +66,7 @@
     </section>
 
     <section class="charts-section">
-      <header class="section-head chart-controls"><div><h2>结果证据</h2><p id="chartContext">比较全部风险档</p></div><div class="toolbar"><button id="sampleToggle" type="button">显示样本路径</button><button id="scaleToggle" type="button">尺度：聚焦</button><button id="rangeReset" type="button">重置区间</button></div></header>
+      <header class="section-head chart-controls"><div><h2>结果证据</h2><p id="chartContext">比较全部风险档</p></div><div class="toolbar"><button id="scaleToggle" type="button">尺度：聚焦</button><button id="rangeReset" type="button">重置区间</button></div></header>
       <div class="chart-grid"><article><h3>资金路径</h3><div id="pathChart" class="chart"></div></article><article><h3>最终结果分布</h3><div id="distributionChart" class="chart"></div></article></div>
       <div id="rangeResult" class="range-result" hidden></div>
     </section>
