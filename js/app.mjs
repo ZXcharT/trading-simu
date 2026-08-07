@@ -29,7 +29,7 @@ function setStatus(status,label,meta=''){
   state.status=status;$('stateLabel').textContent=label;$('stateMeta').textContent=meta;
   $('stateDot').className=`state-dot ${status==='completed'?'complete':status}`;
 }
-function updateProgress(title,detail,percent=0){$('progressTitle').textContent=title;$('progressDetail').textContent=detail;$('progressBar').style.width=`${Math.max(0,Math.min(100,percent))}%`}
+function updateProgress(title,detail,percent=0){$('progressTitle').textContent=title;$('progressDetail').textContent=detail;$('progressBar').style.transform=`scaleX(${Math.max(0,Math.min(100,percent))/100})`}
 function updateDraftFromInputs(){
   state.draft={...state.draft,winRate:+$('winRate').value,rewardRisk:+$('rewardRisk').value,trades:+$('trades').value,runs:+$('runs').value,targetReturnIndex:+$('targetReturnIndex').value,maxDrawdown:+$('maxDrawdown').value,annualTrades:+$('annualTrades').value};
   $('winRateValue').textContent=`${state.draft.winRate}%`;$('rewardRiskValue').textContent=state.draft.rewardRisk.toFixed(1);$('tradesValue').textContent=state.draft.trades;$('runsValue').textContent=state.draft.runs;$('targetReturnValue').textContent=`${TARGET_RETURN_VALUES[state.draft.targetReturnIndex]}%`;$('maxDrawdownValue').textContent=`${state.draft.maxDrawdown}%`;$('annualTradesValue').textContent=state.draft.annualTrades;
