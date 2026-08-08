@@ -1,7 +1,7 @@
 {
   "name": "OneChart 交易模拟器",
   "short_name": "交易模拟器",
-  "description": "基于凯利公式与蒙特卡洛算法的资金曲线及风险诊断工具",
+  "description": "用凯利公式与蒙特卡洛路径检验资金增长、回撤和单笔风险上限",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f3f4f6",
