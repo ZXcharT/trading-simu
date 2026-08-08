@@ -72,8 +72,8 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
       tooltip:{show:false},
       grid:{left:58,right:30,top:28,bottom:44},
       legend:compactLegend(colors,legendData),
-      xAxis:{type:'category',boundaryGap:false,data:Array.from({length:current.params.trades+1},(_,i)=>i),name:'交易次数',nameLocation:'middle',nameGap:28,axisLabel:{color:colors.muted},axisLine:{lineStyle:{color:colors.line}},splitLine:{show:false}},
-      yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'资金',axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
+      xAxis:{type:'category',boundaryGap:false,data:Array.from({length:current.params.trades+1},(_,i)=>i),name:'交易次数',nameLocation:'middle',nameGap:28,nameTextStyle:{color:colors.text,fontSize:11,fontWeight:600},axisLabel:{color:colors.muted},axisLine:{lineStyle:{color:colors.line}},splitLine:{show:false}},
+      yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'资金',nameTextStyle:{color:colors.text,fontSize:11,fontWeight:600},axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
       series
     },true);
   }
@@ -107,8 +107,8 @@ export function createCharts({ pathElement, distributionElement, onRange }) {
       brush:{toolbox:['clear'],yAxisIndex:0,brushMode:'single',brushStyle:{borderWidth:1,borderColor:colors.ink,color:'rgba(85,125,168,.12)'}},
       grid:{left:68,right:30,top:28,bottom:44},
       legend:compactLegend(colors,rows.map(row=>row.name)),
-      xAxis:{type:'value',max:densityMax,name:'相对密度',nameLocation:'middle',nameGap:28,axisLabel:{color:colors.muted,formatter:value=>densityMax?`${(value/densityMax*100).toFixed(0)}%`:'0%'},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line}}},
-      yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'最终资金',axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
+      xAxis:{type:'value',max:densityMax,name:'相对密度',nameLocation:'middle',nameGap:28,nameTextStyle:{color:colors.text,fontSize:11,fontWeight:600},axisLabel:{color:colors.muted,formatter:value=>densityMax?`${(value/densityMax*100).toFixed(0)}%`:'0%'}, axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line}}},
+      yAxis:{type:'log',logBase:10,min:range.min,max:range.max,name:'最终资金',nameTextStyle:{color:colors.text,fontSize:11,fontWeight:600},axisLabel:{color:colors.muted,formatter:money},axisLine:{lineStyle:{color:colors.line}},splitLine:{lineStyle:{color:colors.line,type:'dashed'}},minorSplitLine:{show:true,lineStyle:{color:colors.minor,type:'dashed'}}},
       series
     },true);
     distributionChart.dispatchAction({type:'takeGlobalCursor',key:'brush',brushOption:{brushType:'lineY',brushMode:'single'}});
