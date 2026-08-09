@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trading-simu-v15';
+const CACHE_NAME = 'trading-simu-v16';
 const CORE = [
   './','./index.html','./styles.css','./manifest.json','./icons/icon-192.png','./icons/icon-512.png',
   './assets/brand/onechart-favicon.svg','./assets/brand/onechart-lockup-horizontal-black.svg','./assets/brand/onechart-lockup-horizontal-white.svg','./assets/brand/onechart-og.png',
