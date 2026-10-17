@@ -1,5 +1,5 @@
 import { TARGET_RETURN_VALUES, deterministicSummary } from './engine.mjs';
-import { createCharts } from './charts.mjs';
+import { createCharts, strategyColor } from './charts.mjs';
 import { syncRiskSuggestion } from './kelly-sync.mjs';
 
 const $ = id => document.getElementById(id);
@@ -29,7 +29,7 @@ function sameParams(a,b){
   const comparable=value=>{const {basis,bases,...rest}=value;return rest};
   return JSON.stringify(comparable(a))===JSON.stringify(comparable(b));
 }
-function resultForBasis(result,basis=state.viewBasis){return {...result,params:{...result.params,basis},strategies:result.strategiesByBasis[basis]}}
+function resultForBasis(result,basis=state.viewBasis){return {...result,params:{...result.params,basis},strategies:result.strategiesByBasis[basis].map(row=>basis==='theory'&&row.id==='c3'?{...row,name:'满凯利'}:row)}}
 function formatPercent(value,digits=2){return Number.isFinite(value)?`${value.toFixed(digits)}%`:'—'}
 function formatPoint(value){return Number.isFinite(value)?`${value>=0?'+':''}${value.toFixed(1)}个百分点`:'—'}
 function formatMoney(value){if(!Number.isFinite(value))return'—';if(value>=1e8)return`${(value/1e8).toFixed(2)}亿`;if(value>=1e4)return`${(value/1e4).toFixed(2)}万`;return value.toFixed(1)}
@@ -37,7 +37,7 @@ function limitingText(value){return({drawdown:'最大回撤',kelly:'凯利上限
 function targetStatusText(reverse){if(reverse.targetRequiredRisk===-1)return'当前策略不可达';return reverse.targetReachable?'安全上限内可达':'需突破风险边界'}
 function renderLiveSummary(summary,params){
   const positive=summary.expectancy>0;
-  $('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyResult').style.color=positive?'var(--gain)':'var(--risk)';$('breakEvenResult').textContent=formatPercent(summary.breakEvenWinRate,1);$('winEdgeResult').textContent=formatPoint(params.winRate-summary.breakEvenWinRate);$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
+  $('expectancyResult').textContent=`${summary.expectancy>=0?'+':''}${summary.expectancy.toFixed(3)}R`;$('expectancyResult').style.color=summary.expectancy===0?'var(--text)':positive?'var(--gain)':'var(--risk)';$('breakEvenResult').textContent=formatPercent(summary.breakEvenWinRate,1);$('winEdgeResult').textContent=formatPoint(params.winRate-summary.breakEvenWinRate);$('kellyResult').textContent=formatPercent(summary.fullKelly*100);
 }
 
 function setStatus(status,label,meta=''){
@@ -104,19 +104,20 @@ function renderResult(result){
   renderBasis(result);
 }
 function renderBasis(result){
+  $('basisDescription').textContent=state.viewBasis==='decision'?`以满额风险 ${formatPercent(result.reverse.recommendedRisk*100)} 为基准`:`以满凯利 ${formatPercent(result.summary.fullKelly*100)} 为基准，不受回撤边界约束`;
   const view=resultForBasis(result);renderLadder(view);renderDetails(null);charts.setResult(view);$('chartContext').textContent=state.viewBasis==='decision'?'比较风险敞口档位':'比较凯利理论档';$('clearStrategy').hidden=true;$('scaleToggle').textContent='尺度：聚焦';
 }
 function renderLadder(result){
   const container=$('riskLadder');container.replaceChildren();
   for(const row of result.strategies){
-    const button=document.createElement('button');button.type='button';button.className='risk-item';button.style.setProperty('--strategy-color',row.color);button.dataset.strategy=row.id;
-    button.innerHTML=`<strong>${row.name}</strong><div class="risk-primary"><span>单笔风险</span><b>${formatPercent(row.fraction*100,2)}</b></div><dl><div><dt>最终资金中位数</dt><dd>${formatMoney(row.median[row.trades])}</dd></div><div><dt title="80%的模拟路径，最大回撤不超过此值；20%可能更差">80分位回撤</dt><dd>${formatPercent(row.p80Drawdown,1)}</dd></div><div><dt>腰斩概率</dt><dd>${formatPercent(row.halveRate,1)}</dd></div><div><dt>接近归零概率</dt><dd>${formatPercent(row.ruinRate,1)}</dd></div></dl>`;
+    const button=document.createElement('button');button.type='button';button.className='risk-item';button.style.setProperty('--strategy-color',strategyColor(row.id));button.dataset.strategy=row.id;button.setAttribute('aria-pressed','false');
+    button.innerHTML=`<strong class="risk-name"><span class="risk-dot" aria-hidden="true"></span><span>${row.name}</span></strong><div class="risk-primary"><span>单笔风险</span><b>${formatPercent(row.fraction*100,2)}</b></div><dl><div><dt>最终资金中位数</dt><dd>${formatMoney(row.median[row.trades])}</dd></div><div><dt title="80%的模拟路径，最大回撤不超过此值；20%可能更差">80分位回撤</dt><dd>${formatPercent(row.p80Drawdown,1)}</dd></div><div><dt>腰斩概率</dt><dd>${formatPercent(row.halveRate,1)}</dd></div><div><dt>接近归零概率</dt><dd>${formatPercent(row.ruinRate,1)}</dd></div></dl>`;
     button.addEventListener('click',()=>selectStrategy(row.id,result));container.appendChild(button);
   }
 }
 function selectStrategy(id,result=state.lastGoodResult?resultForBasis(state.lastGoodResult):null){
   if(!result)return;
-  charts.selectStrategy(id);const selectedId=charts.getState().selectedId;document.querySelectorAll('.risk-item').forEach(item=>item.classList.toggle('active',item.dataset.strategy===selectedId));$('clearStrategy').hidden=!selectedId;
+  charts.selectStrategy(id);const selectedId=charts.getState().selectedId;document.querySelectorAll('.risk-item').forEach(item=>{const selected=item.dataset.strategy===selectedId;item.classList.toggle('active',selected);item.setAttribute('aria-pressed',String(selected))});$('clearStrategy').hidden=!selectedId;
   const row=result.strategies.find(item=>item.id===selectedId)||null;$('chartContext').textContent=row?`正在分析：${row.name} · 自动显示样本路径`:(state.viewBasis==='decision'?'比较风险敞口档位':'比较凯利理论档');renderDetails(row);
 }
 function renderDetails(row){const box=$('detailContent');if(!row){box.innerHTML='<p>选择一个风险档后查看最低样本、中位数和最高样本。</p>';return}box.innerHTML=`<article><span>最低样本结果</span><strong>${formatMoney(row.minPath[row.trades])}</strong></article><article><span>中位数结果</span><strong>${formatMoney(row.median[row.trades])}</strong></article><article><span>最高样本结果</span><strong>${formatMoney(row.maxPath[row.trades])}</strong></article>`}
@@ -129,14 +130,31 @@ function syncTo(buyPoint){
   $('syncStatus').textContent=sync.ok?`已应用到${label} · ${time}`:`${label}应用受限，请打开仓位计算器确认`;
 }
 
-function setBasis(basis){if(state.viewBasis===basis)return;state.viewBasis=basis;document.querySelectorAll('[data-basis]').forEach(button=>button.classList.toggle('active',button.dataset.basis===basis));$('basisDescription').textContent=basis==='decision'?'围绕满额风险敞口比较执行档位':'比较完整凯利理论档位（高级）';if(state.lastGoodResult)renderBasis(state.lastGoodResult)}
-function syncTheme(){const dark=document.documentElement.dataset.theme==='dark';$('themeLabel').textContent=dark?'浅色':'深色';$('themeToggle').setAttribute('aria-label',dark?'切换到浅色模式':'切换到深色模式');document.querySelector('meta[name=theme-color]').content=dark?'#0f1216':'#f3f4f6'}
-function toggleTheme(){const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;document.documentElement.style.colorScheme=next;try{localStorage.setItem('onechart-theme',next)}catch{}syncTheme();charts.refreshTheme()}
-function toggleDrawer(open){$('parameterPanel').classList.toggle('active',open);$('drawerOverlay').classList.toggle('active',open)}
+function setBasis(basis){if(state.viewBasis===basis)return;state.viewBasis=basis;document.querySelectorAll('[data-basis]').forEach(button=>{const selected=button.dataset.basis===basis;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});$('basisDescription').textContent=basis==='decision'?'围绕满额风险敞口比较执行档位':'比较完整凯利理论档位（高级）';if(state.lastGoodResult)renderBasis(state.lastGoodResult)}
+function syncTheme(){const dark=document.documentElement.dataset.theme==='dark';$('themeLabel').textContent=dark?'浅色':'深色';$('themeToggle').setAttribute('aria-label',dark?'切换到浅色模式':'切换到深色模式');document.querySelector('meta[name=theme-color]').content=dark?'#171d23':'#f7f7f7';document.querySelectorAll('.risk-item').forEach(item=>item.style.setProperty('--strategy-color',strategyColor(item.dataset.strategy)))}
+function toggleTheme(){const root=document.documentElement;root.dataset.themeSwitching='';const next=root.dataset.theme==='dark'?'light':'dark';root.dataset.theme=next;root.style.colorScheme=next;try{localStorage.setItem('onechart-theme',next)}catch{}syncTheme();charts.refreshTheme();requestAnimationFrame(()=>requestAnimationFrame(()=>delete root.dataset.themeSwitching))}
+let drawerReturnFocus=null;
+function toggleDrawer(open){
+ const panel=$('parameterPanel'),mobile=window.innerWidth<=992;
+ if(open&&!mobile)return;
+ if(open){drawerReturnFocus=document.activeElement;panel.inert=false;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');document.querySelector('.result-column').inert=true;document.querySelector('.site-nav').inert=true;document.body.style.overflow='hidden'}
+ else{document.querySelector('.result-column').inert=false;document.querySelector('.site-nav').inert=false;document.body.style.overflow='';panel.removeAttribute('role');panel.removeAttribute('aria-modal')}
+ panel.classList.toggle('active',open);$('drawerOverlay').classList.toggle('active',open);$('mobileParamsButton').setAttribute('aria-expanded',String(open));
+ if(open)$('closeParams').focus();else{panel.inert=mobile;drawerReturnFocus?.focus()}
+}
+document.addEventListener('keydown',event=>{
+ if(!$('parameterPanel').classList.contains('active'))return;
+ if(event.key==='Escape'){event.preventDefault();toggleDrawer(false)}
+ if(event.key==='Tab'){const items=[...$('parameterPanel').querySelectorAll('button:not(:disabled),input,summary')].filter(el=>el.getClientRects().length);const first=items[0],last=items.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}
+});
+const drawerBreakpoint=matchMedia('(max-width:992px)');
+function syncDrawerLayout(){if(!drawerBreakpoint.matches&&$('parameterPanel').classList.contains('active'))toggleDrawer(false);$('parameterPanel').inert=drawerBreakpoint.matches&&!$('parameterPanel').classList.contains('active')}
+drawerBreakpoint.addEventListener('change',syncDrawerLayout);syncDrawerLayout();
 
 for(const id of ['winRate','rewardRisk','trades','targetReturnIndex','maxDrawdown','annualTrades'])$(id).addEventListener('input',updateDraftFromInputs);
 document.querySelectorAll('[data-basis]').forEach(button=>button.addEventListener('click',()=>setBasis(button.dataset.basis)));
 $('runButton').addEventListener('click',()=>requestRun());$('reshuffleButton').addEventListener('click',()=>requestRun({reshuffle:true}));$('cancelButton').addEventListener('click',cancelCurrent);$('clearStrategy').addEventListener('click',()=>{charts.clearSelection();selectStrategy(null)});$('scaleToggle').addEventListener('click',()=>{$('scaleToggle').textContent=`尺度：${charts.toggleScale()==='focus'?'聚焦':'全量'}`});$('rangeReset').addEventListener('click',()=>charts.clearRange());$('syncCallback').addEventListener('click',()=>syncTo('callback'));$('syncStartup').addEventListener('click',()=>syncTo('startup'));$('themeToggle').addEventListener('click',toggleTheme);$('mobileParamsButton').addEventListener('click',()=>toggleDrawer(true));$('closeParams').addEventListener('click',()=>toggleDrawer(false));$('drawerOverlay').addEventListener('click',()=>toggleDrawer(false));window.addEventListener('resize',()=>charts.resize());
 
+document.querySelectorAll('[data-basis]').forEach(button=>button.setAttribute('aria-pressed',String(button.classList.contains('active'))));
 syncTheme();updateDraftFromInputs();ensureWorker();requestRun({reshuffle:true});
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

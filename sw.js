@@ -1,6 +1,6 @@
-const CACHE_NAME = 'trading-simu-v19';
+const CACHE_NAME = 'trading-simu-v20';
 const CORE = [
-  './','./index.html','./styles.css','./manifest.json','./icons/icon-192.png','./icons/icon-512.png',
+  './','./index.html','./styles.css','./family.css','./init-theme.js','./manifest.json','./icons/icon-192.png','./icons/icon-512.png',
   './assets/brand/onechart-favicon.svg','./assets/brand/onechart-lockup-horizontal-black.svg','./assets/brand/onechart-lockup-horizontal-white.svg','./assets/brand/onechart-og.png',
   './vendor/echarts.min.js',
   './js/app.mjs','./js/charts.mjs','./js/engine.mjs','./js/random.mjs','./js/kelly-sync.mjs','./js/simulation.worker.mjs'

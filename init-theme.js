@@ -1,0 +1,1 @@
+(()=>{let t='light';try{const saved=localStorage.getItem('onechart-theme');if(saved==='light'||saved==='dark')t=saved}catch{}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})();

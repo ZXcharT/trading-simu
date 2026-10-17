@@ -3,25 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>交易模拟器 | OneChart</title>
+  <title>概率模拟器 | OneChart</title>
   <meta name="description" content="用凯利公式与蒙特卡洛路径检验资金增长、回撤和单笔风险上限。">
-  <meta name="theme-color" content="#f3f4f6">
+  <meta name="theme-color" content="#f7f7f7">
   <link rel="icon" type="image/svg+xml" href="./assets/brand/onechart-favicon.svg">
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
+
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="OneChart">
-  <meta property="og:title" content="交易模拟器 | OneChart">
+  <meta property="og:title" content="概率模拟器 | OneChart">
   <meta property="og:description" content="用凯利公式与蒙特卡洛路径检验资金增长、回撤和单笔风险上限。">
   <meta property="og:url" content="https://simu.onechart.top/">
   <meta property="og:image" content="https://simu.onechart.top/assets/brand/onechart-og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <script>(function(){var t='light';try{var s=localStorage.getItem('onechart-theme');if(s==='light'||s==='dark')t=s}catch(e){}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t})();</script>
+  <script src="./init-theme.js"></script>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./family.css">
   <script src="./vendor/echarts.min.js"></script>
 </head>
 <body>
-<!-- THESIS: One continuous risk-decision bench turns strategy assumptions into a risk ceiling and inspectable evidence; it refuses modes, questionnaires, card walls, and main-thread simulation. OWN-WORLD: OneChart paper surfaces, square controls, hairline rules, compact system type, and data-only semantic color. STORY: Set assumptions, run once, read the limiting risk, compare risk levels, then inspect path and distribution evidence. FIRST VIEWPORT: Family navigation and status above a parameter rail, a decision summary, a risk ladder, and paired evidence charts. FORM: Direct operating workspace; no entry choice. FINISH: unreviewed and undocumented is unfinished; this build ends with performance evidence, mobile evidence, final review, and updated DESIGN.md. -->
+<!-- OneChart · One-SIMU: strategy assumptions, risk limits and probability evidence. -->
 <nav class="site-nav" aria-label="OneChart 导航">
   <div class="layout-inner nav-inner">
     <a class="wordmark" href="https://onechart.top/" aria-label="OneChart 首页">
@@ -29,24 +31,24 @@
       <img class="brand-lockup brand-lockup-dark" src="./assets/brand/onechart-lockup-horizontal-white.svg" alt="">
     </a>
     <div class="nav-links">
-      <a href="https://onechart.top/">板块资金雷达</a>
-      <a href="https://onechart.top/macro/">宏观择时</a>
-      <a href="https://bs.onechart.top/">仓位计算器</a>
-      <a class="active" aria-current="page" href="./">交易模拟器</a>
+      <a href="https://onechart.top/">资金流</a>
+      <a href="https://onechart.top/macro/">离散度</a>
+      <a href="https://amv.onechartlab.com/">活跃度</a>
+      <a href="https://bs.onechart.top/">仓位计算</a>
+      <a class="active" aria-current="page" href="./">概率模拟</a>
     </div>
-    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换到深色模式"><span class="theme-mark" aria-hidden="true"></span><span id="themeLabel">深色</span></button>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换到深色模式"><svg class="theme-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><svg class="theme-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20.5 14A8.8 8.8 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z"/></svg><span id="themeLabel" class="sr-only">深色</span></button>
   </div>
 </nav>
 <header class="layout-inner page-head">
-  <div><h1>交易模拟器</h1><p>用随机路径检验资金增长、回撤与风险上限</p></div>
+  <div><h1>概率模拟器</h1><p>用随机路径检验资金增长、回撤与风险上限</p></div>
 </header>
-<button id="mobileParamsButton" class="mobile-params" type="button">调整参数 <span id="mobileStateLabel">准备计算</span></button>
+<button id="mobileParamsButton" class="mobile-params" type="button" aria-controls="parameterPanel" aria-expanded="false">调整参数 <span id="mobileStateLabel">准备计算</span></button>
 <div id="drawerOverlay" class="drawer-overlay"></div>
 <main class="layout-inner workspace">
   <aside id="parameterPanel" class="parameter-panel" aria-label="模拟参数">
     <div class="panel-heading"><h2>参数</h2><button id="closeParams" class="close-params" type="button" aria-label="关闭参数">×</button></div>
-    <section class="param-section">
-      <h3>策略参数</h3>
+    <section class="param-section" aria-label="胜率、盈亏比与观察交易笔数">
       <label class="range-field"><span>胜率</span><output id="winRateValue">45%</output><input id="winRate" type="range" min="20" max="75" step="1" value="45"></label>
       <label class="range-field"><span>盈亏比</span><output id="rewardRiskValue">2.0</output><input id="rewardRisk" type="range" min="0.5" max="8" step="0.1" value="2"></label>
       <label class="range-field"><span>观察交易笔数</span><output id="tradesValue">100</output><input id="trades" type="range" min="50" max="500" step="10" value="100"></label>
@@ -71,7 +73,7 @@
     <section class="decision-summary">
       <article class="expectancy-conclusion"><div class="summary-heading"><span class="eyebrow">单笔数学期望</span><strong id="expectancyResult">–</strong></div><dl><div><dt>盈亏平衡胜率</dt><dd id="breakEvenResult">–</dd></div><div><dt>高于盈亏平衡</dt><dd id="winEdgeResult">–</dd></div><div><dt>凯利上限</dt><dd id="kellyResult">–</dd></div></dl></article>
       <article class="risk-conclusion"><div class="summary-heading"><span class="eyebrow">单笔建议风险敞口</span><span class="full-risk" title="单笔最大风险"><small>满额</small><strong id="recommendedRisk">–</strong></span></div><dl><div><dt>半额测试</dt><dd id="testRisk">–</dd></div><div><dt>主要风险约束</dt><dd id="limitingFactor">–</dd></div><div><dt>收益目标</dt><dd id="targetStatus">–</dd></div></dl></article>
-      <article class="handoff"><div class="summary-heading handoff-heading"><span class="eyebrow">应用到仓位计算器</span><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器</a></div><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">完成模拟后，可选择买点类型应用风险参数</p></article>
+      <article class="handoff"><div class="summary-heading handoff-heading"><span class="eyebrow">应用到仓位计算器</span><a href="https://bs.onechart.top/" target="_blank" rel="noopener">打开仓位计算器 ↗</a></div><div class="handoff-actions"><button id="syncCallback" type="button" disabled>回调买点</button><button id="syncStartup" type="button" disabled>启动买点</button></div><p id="syncStatus">完成模拟后，可选择买点类型应用风险参数</p></article>
     </section>
 
     <section class="ladder-section">
@@ -80,9 +82,15 @@
       <button id="clearStrategy" class="text-button" type="button" hidden>返回全部档位比较</button>
     </section>
 
-    <section class="charts-section">
-      <header class="section-head chart-controls"><div><h2>结果证据</h2><p id="chartContext">比较全部风险档</p></div><div class="toolbar"><button id="scaleToggle" type="button">尺度：聚焦</button><button id="rangeReset" type="button">重置区间</button></div></header>
-      <div class="chart-grid"><article><h3>资金曲线</h3><div id="pathChart" class="chart"></div></article><article><h3>最终资金分布</h3><div id="distributionChart" class="chart"></div></article></div>
+    <section class="charts-section" aria-label="模拟图表" aria-describedby="chartContext">
+      <p id="chartContext" class="sr-only" aria-live="polite">比较全部风险档</p>
+      <div class="chart-grid">
+        <article aria-labelledby="pathTitle">
+          <header class="chart-heading"><h2 id="pathTitle">资金曲线</h2><div class="toolbar" role="group" aria-label="图表显示工具"><button id="scaleToggle" type="button" title="同时切换两张图的显示尺度">尺度：聚焦</button><button id="rangeReset" class="icon-button" type="button" aria-label="重置分布区间" title="重置分布区间"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></svg></button></div></header>
+          <div id="pathChart" class="chart" aria-label="资金曲线，起始资金为100" aria-describedby="chartContext"></div>
+        </article>
+        <article aria-labelledby="distributionTitle"><header class="chart-heading"><h2 id="distributionTitle">最终资金分布</h2></header><div id="distributionChart" class="chart" aria-describedby="chartContext"></div></article>
+      </div>
       <div id="rangeResult" class="range-result" hidden></div>
     </section>
 
@@ -93,7 +101,7 @@
     <div id="errorPanel" class="error-panel" hidden></div>
   </div>
 </main>
-<footer class="layout-inner footer">模拟用于理解概率与风险，不构成收益预测或投资建议。制作者：<a href="https://b23.tv/KYfLfcH" target="_blank" rel="noopener">知行图表交易</a></footer>
+<footer class="layout-inner footer"><span>OneChart · One-SIMU</span><span>模拟用于理解概率与风险，不构成收益预测或投资建议。</span></footer>
 <script type="module" src="./js/app.mjs"></script>
 </body>
 </html>
