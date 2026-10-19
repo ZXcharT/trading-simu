@@ -12,6 +12,7 @@ FILES=['index.html','styles.css','family.css','init-theme.js','manifest.json','s
        'js/app.mjs','js/charts.mjs','js/engine.mjs','js/random.mjs','js/kelly-sync.mjs','js/simulation.worker.mjs',
        'assets/brand/onechart-favicon.svg','assets/brand/onechart-lockup-horizontal-black.svg',
        'assets/brand/onechart-lockup-horizontal-white.svg','assets/brand/onechart-og.png']
+FILES += ['assets/share/'+name for name in ('share-core.js','share-core.css','tool-share.js','tool-share.css')]
 EXTRA={'domain-config.js','404.html','_headers'}
 revision=os.environ.get('CF_PAGES_COMMIT_SHA') or subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
 if not re.fullmatch('[0-9a-f]{40}',revision):raise ValueError('A concrete Git source revision is required')
@@ -30,8 +31,8 @@ html=html.replace('<head>','<head>\n  <script src="./domain-config.js"></script>
 # Existing kelly-sync.mjs already supports this scoped host configuration.
 (OUT/'domain-config.js').write_text("'use strict';\nif (location.hostname === 'calc.onechartlab.com' || location.hostname === 'simu.onechartlab.com') {\n  window.__ONECHART_KELLY_COOKIE_DOMAIN__ = '.onechartlab.com';\n}\n")
 sw=(OUT/'sw.js').read_text()
-if sw.count("const CACHE_NAME = 'trading-simu-v20';")!=1 or sw.count('const CORE = [')!=1:raise ValueError('Review the source PWA cache before publishing')
-sw=sw.replace("const CACHE_NAME = 'trading-simu-v20';","const CACHE_NAME = 'one-simu-com-"+revision[:12]+"';",1)
+if sw.count("const CACHE_NAME = 'trading-simu-v21-share-20261020';")!=1 or sw.count('const CORE = [')!=1:raise ValueError('Review the source PWA cache before publishing')
+sw=sw.replace("const CACHE_NAME = 'trading-simu-v21-share-20261020';","const CACHE_NAME = 'one-simu-com-"+revision[:12]+"';",1)
 sw=sw.replace('const CORE = [',"const CORE = [\n  './domain-config.js',",1)
 (OUT/'sw.js').write_text(sw)
 (OUT/'404.html').write_text('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面不存在 · One-SIMU</title><p>页面不存在，请返回<a href="/">概率模拟器</a>。</p></html>\n')
