@@ -1,0 +1,25 @@
+/* Local calculator/simulator adapters only; original page palettes stay authoritative. */
+body[data-share-tool] .site-global-tools{width:auto}
+body[data-share-tool] .share-trigger{color:var(--frame-muted,var(--muted))}
+body[data-share-tool] .share-trigger:hover{background:var(--frame-hover,var(--hover));color:var(--frame-text,var(--text))}
+body[data-share-tool] .share-global-tools .theme-toggle{margin-left:0}
+body[data-share-tool=simu]{--share-bg:var(--ground);--share-panel:var(--panel);--share-text:var(--ink);--share-muted:var(--muted);--share-line:var(--line);--share-selected:var(--selected);--oc-accent:var(--accent)}
+body[data-share-tool=simu] .share-global-tools{grid-column:3}
+body[data-share-tool=simu] .share-trigger{width:30px;height:30px}
+/* Compact simulator ladder: name and risk on one line, settled figures immediately below. */
+body[data-share-tool=simu] .risk-item{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-content:start;align-items:center;column-gap:8px;row-gap:10px;min-height:0;padding-top:12px;padding-bottom:12px}
+body[data-share-tool=simu] .risk-item .risk-name{grid-column:1;grid-row:1;min-width:0}
+body[data-share-tool=simu] .risk-primary{grid-column:2;grid-row:1;margin:0;padding:0}
+body[data-share-tool=simu] .risk-primary b{font-size:20px;line-height:1.1}
+body[data-share-tool=simu] .risk-primary>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+body[data-share-tool=simu] .risk-item dl{grid-column:1/-1;grid-row:2;margin:0}
+body[data-share-tool=simu] .risk-item dl>div:first-child{margin-top:0}
+body[data-share-tool=simu] .chart-heading{display:grid;grid-template-columns:minmax(110px,1fr) auto minmax(110px,1fr);align-items:center;gap:8px}
+body[data-share-tool=simu] .chart-heading h2{grid-column:1;grid-row:1;justify-self:start}
+body[data-share-tool=simu] .chart-heading .toolbar{grid-column:3;grid-row:1;justify-self:end}
+.compact-chart-legend{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 8px;min-width:0}
+.compact-chart-legend button{display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:2px;border:0;border-radius:4px;background:transparent;color:var(--muted);font:inherit;font-size:11px;line-height:18px;white-space:nowrap;cursor:pointer}
+.compact-chart-legend button:hover{color:var(--ink)}.compact-chart-legend button[aria-pressed=false]{opacity:.45}.compact-chart-legend button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.compact-chart-legend i{width:6px;height:6px;border-radius:50%;flex:none}
+@media(max-width:640px){body[data-share-tool=simu] .chart-heading{grid-template-columns:1fr auto}body[data-share-tool=simu] .chart-heading .toolbar{grid-column:2}.compact-chart-legend{grid-column:1/-1;grid-row:2}}
+@media(max-width:1050px){body[data-share-tool=simu] .share-global-tools{grid-column:2;grid-row:1}}
+@media(pointer:coarse){body[data-share-tool=simu] .share-trigger{width:40px;height:40px}}

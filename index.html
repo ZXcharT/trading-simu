@@ -21,8 +21,10 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./family.css">
   <script src="./vendor/echarts.min.js"></script>
+<link rel="stylesheet" href="./assets/share/share-core.css">
+<link rel="stylesheet" href="./assets/share/tool-share.css">
 </head>
-<body>
+<body data-share-tool="simu">
 <!-- OneChart · One-SIMU: strategy assumptions, risk limits and probability evidence. -->
 <nav class="site-nav" aria-label="OneChart 导航">
   <div class="layout-inner nav-inner">
@@ -103,5 +105,7 @@
 </main>
 <footer class="layout-inner footer"><span>OneChart · One-SIMU</span><span>模拟用于理解概率与风险，不构成收益预测或投资建议。</span></footer>
 <script type="module" src="./js/app.mjs"></script>
+<script src="./assets/share/share-core.js"></script>
+<script defer src="./assets/share/tool-share.js"></script>
 </body>
 </html>

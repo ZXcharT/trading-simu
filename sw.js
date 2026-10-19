@@ -1,5 +1,9 @@
-const CACHE_NAME = 'trading-simu-v20';
+const CACHE_NAME = 'trading-simu-v21-share-20261020';
 const CORE = [
+  './assets/share/share-core.js',
+  './assets/share/share-core.css',
+  './assets/share/tool-share.js',
+  './assets/share/tool-share.css',
   './','./index.html','./styles.css','./family.css','./init-theme.js','./manifest.json','./icons/icon-192.png','./icons/icon-512.png',
   './assets/brand/onechart-favicon.svg','./assets/brand/onechart-lockup-horizontal-black.svg','./assets/brand/onechart-lockup-horizontal-white.svg','./assets/brand/onechart-og.png',
   './vendor/echarts.min.js',
