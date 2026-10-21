@@ -31,8 +31,8 @@ html=html.replace('<head>','<head>\n  <script src="./domain-config.js"></script>
 # Existing kelly-sync.mjs already supports this scoped host configuration.
 (OUT/'domain-config.js').write_text("'use strict';\nif (location.hostname === 'calc.onechartlab.com' || location.hostname === 'simu.onechartlab.com') {\n  window.__ONECHART_KELLY_COOKIE_DOMAIN__ = '.onechartlab.com';\n}\n")
 sw=(OUT/'sw.js').read_text()
-if sw.count("const CACHE_NAME = 'trading-simu-v21-share-20261020';")!=1 or sw.count('const CORE = [')!=1:raise ValueError('Review the source PWA cache before publishing')
-sw=sw.replace("const CACHE_NAME = 'trading-simu-v21-share-20261020';","const CACHE_NAME = 'one-simu-com-"+revision[:12]+"';",1)
+if sw.count("const CACHE_NAME = 'trading-simu-v22-nav-20261021';")!=1 or sw.count('const CORE = [')!=1:raise ValueError('Review the source PWA cache before publishing')
+sw=sw.replace("const CACHE_NAME = 'trading-simu-v22-nav-20261021';","const CACHE_NAME = 'one-simu-com-"+revision[:12]+"';",1)
 sw=sw.replace('const CORE = [',"const CORE = [\n  './domain-config.js',",1)
 (OUT/'sw.js').write_text(sw)
 (OUT/'404.html').write_text('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面不存在 · One-SIMU</title><p>页面不存在，请返回<a href="/">概率模拟器</a>。</p></html>\n')

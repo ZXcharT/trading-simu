@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trading-simu-v21-share-20261020';
+const CACHE_NAME = 'trading-simu-v22-nav-20261021';
 const CORE = [
   './assets/share/share-core.js',
   './assets/share/share-core.css',
